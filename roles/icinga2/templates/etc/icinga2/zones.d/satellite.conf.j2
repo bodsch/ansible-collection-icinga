@@ -1,0 +1,52 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+// {{ ansible_managed }}
+{% if icinga2_host_object is defined and
+      icinga2_host_object | count != 0 %}
+  {#
+    define some variables from 'icinga2_host_object' dictionary
+  #}
+  {% for key, values in icinga2_host_object.items() %}
+    {% set address = icinga2_satellites | bodsch.icinga.dns_icinga_satellite(
+            object_name=key,
+            object_data=values,
+            satellite_zone=icinga2_satellite_zone,
+            alternatives=[key, ansible_fqdn]) %}
+    {% set values, _, object_name, zone_name, display_name, check_command, address = values | bodsch.icinga.host_object_values(False, key, ansible_fqdn) %}
+{#
+    object_name   {{ object_name }}   - {{ object_name | bodsch.core.type }}
+    zone_name     {{ zone_name }}     - {{ zone_name | bodsch.core.type }}
+    display_name  {{ display_name }}  - {{ display_name | bodsch.core.type }}
+    check_command {{ check_command }} - {{ check_command | bodsch.core.type }}
+    address       {{ address }}       - {{ address | bodsch.core.type }}
+    -> {{ values }}
+#}
+
+// icinga2 satellite - {{ key }}
+object Host "{{ object_name }}" {
+    {% if address is defined and address | string | length > 0 %}
+  address = "{{ address }}"
+    {% endif %}
+    {% if check_command and check_command | string | length > 0 %}
+  check_command = "{{ check_command }}"
+    {% endif %}
+    {% if display_name and display_name | string | length > 0 %}
+  display_name = "{{ display_name }}"
+    {% endif %}
+  command_endpoint = "{{ ansible_fqdn }}"
+  zone = "{{ zone_name }}"
+    {% for ke,ve in values.items() | sort %}
+      {% if ke == 'import' %}
+  {{ ke }} "{{ ve }}"
+      {% elif ke == 'groups' %}
+  {{ ke }} = ["{{ ve | join('","') }}"]
+      {% elif ke == 'vars' %}
+  vars = {
+    {{ ve | indent(4) }}
+  }
+      {% else %}
+  {{ ke }} = "{{ ve }}"
+      {% endif %}
+    {% endfor %}
+}
+  {% endfor %}
+{% endif %}

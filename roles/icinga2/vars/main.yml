@@ -1,0 +1,425 @@
+---
+
+monitoring_plugins_directory: /usr/lib/monitoring-plugins
+
+icinga2_mariadb_build_packages: []
+icinga2_mariadb_python_packages:
+  - name: mysqlclient
+
+icinga2_python_build_packages: []
+
+icinga2_packages:
+  - icinga2
+  - icinga2-common
+
+icinga2_python_requirements:
+  - name: psutil
+
+icinga2_requirements:
+  - gnupg
+  - ca-certificates
+
+icinga2_remove_old_cert: false
+icinga2_installed: false
+icinga2_installed_version: ''
+icinga2_needs_update: true
+
+icinga2_downtime_system_name_internal: ''
+
+icinga2_defaults_apply_service:
+  ssh:
+    import: generic-service
+    check_command: ssh
+    assign_where: '(host.address || host.address6) && host.vars.os == "Linux"'
+  ping4:
+    import: generic-service
+    check_command: ping4
+    assign_where: host.address
+  ping6:
+    import: generic-service
+    check_command: ping6
+    assign_where: host.address6
+  load:
+    import: generic-service
+    check_command: load
+    # Used by the ScheduledDowntime apply rule in `downtimes.conf`.
+    extra_parameters: |
+      if(host.vars.downtime) {
+        vars.backup_downtime = host.vars.downtime
+      }
+    assign_where: 'host.vars.os == "Linux"'
+  icinga:
+    import: generic-service
+    check_command: icinga
+    assign_where: 'host.name == NodeName'
+  procs:
+    import: generic-service
+    check_command: procs
+    assign_where: 'host.name == NodeName'
+  users:
+    import: generic-service
+    check_command: users
+    extra_parameters: |
+      vars.users_wgreater = 0
+    assign_where: 'host.vars.os == "Linux"'
+  apt:
+    import: generic-service
+    check_command: apt
+
+    extra_parameters: |
+      if (host.vars.apt) {
+        vars = host.vars.apt
+      } else {
+        vars = {
+          apt_upgrade = true
+          apt_critical = 20
+          apt_warning = 10
+          apt_only_critical = true
+          apt_list = true
+        }
+      }
+
+    check_interval: 30m
+    retry_interval: 2
+    max_check_attempts: 2
+    assign_where: 'host.vars.os == "Linux" && (host.vars.dist == "Debian" || host.vars.dist == "Ubuntu")'
+  uptime:
+    import: generic-service
+    display_name: system uptime
+    check_command: system_uptime
+    assign_where: '"uptime" in host.vars.services'
+  memory:
+    import: generic-service
+    display_name: system memory
+    check_command: check_memory
+    check_interval: '45s'
+    retry_interval: '10s'
+    assign_where: '"memory" in host.vars.services'
+    ignore_where: 'host.vars.os == "Windows"'
+  #
+  processes:
+    name: "process: "
+    for: '(c => process in host.vars.processes)'
+
+    import: generic-service
+
+    extra_parameters: |
+      if (!process.proc_crit) {
+        process.proc_crit = "1:"
+      }
+      vars.procs_warning = process.proc_warn
+      vars.procs_critical = process.proc_crit
+
+      if (process.argument) {
+        vars.procs_argument = process.argument
+        check_command = "procs"
+      } else if (process.command) {
+        vars.procs_command = process.command
+        check_command = "procs"
+      }
+  #
+  dns:
+    name: "dns: "
+    for: '(c => config in host.vars.zones)'
+
+    import: generic-service
+    check_command: dns
+
+    check_interval: 5m
+    max_check_attempts: 2
+
+    extra_parameters: |
+      var dns_lookup = check_dictionary(config, "dns_lookup")
+      if(!dns_lookup) {
+        dns_lookup = "google.com"
+      }
+      vars = {
+        "dns_server" = "127.0.0.1"
+        "dns_lookup" = dns_lookup
+        "dns_timeout" = 2
+      }
+    assign_where: host.vars.zones
+
+icinga2_defaults_checkcommands:
+  system_uptime:
+    import: plugin-check-command
+    command: '[ PluginDir + "/check_uptime.sh" ]'
+  check_memory:
+    import: plugin-check-command
+    command: '[ PluginDir + "/check_mem" ]'
+
+icinga2_defaults_timeperiod:
+  never:
+    display_name: Icinga2 never TimePeriod
+    ranges: {}
+
+  9to5:
+    display_name: Icinga2 9to5 TimePeriod
+    ranges:
+      monday: "09:00-17:00"
+      tuesday: "09:00-17:00"
+      wednesday: "09:00-17:00"
+      thursday: "09:00-17:00"
+      friday: "09:00-17:00"
+      saturday: "09:00-17:00"
+      sunday: "09:00-17:00"
+
+  24x7:
+    display_name: Icinga2 24x7 TimePeriod
+    ranges:
+      monday: "00:00-24:00"
+      tuesday: "00:00-24:00"
+      wednesday: "00:00-24:00"
+      thursday: "00:00-24:00"
+      friday: "00:00-24:00"
+      saturday: "00:00-24:00"
+      sunday: "00:00-24:00"
+
+icinga2_defaults_ido:
+  type: mysql
+  enabled: true
+  user: 'icinga2_ido'
+  password: 'icinga2_ido'
+  host: '127.0.0.1'
+  database: 'icinga2_ido'
+  port: 3306
+  socket: /run/mysqld.sock
+  # Max age for ... Defaults to 0 (never)
+  cleanup: {}
+  mysql:
+    schema_file: /usr/share/icinga2-ido-mysql/schema/mysql.sql
+    schema_upgrade: /usr/share/icinga2-ido-mysql/schema/upgrade
+
+icinga2_defaults_api:
+  enabled: true
+  accept_config: true
+  accept_commands: true
+  ticket_salt: TicketSalt
+  user:
+    validate:
+      password: iLIIDs3x9OE6HR4zOwyH7cZQiYT29KxWLtYQxqvVHx
+      permissions:
+        - "status/query"
+
+icinga2_defaults_filelogger:
+  directory: /var/log/icinga2
+  mainlog:
+    severity: warning
+    logfile: icinga2.log
+
+# https://icinga.com/docs/icinga-2/latest/doc/03-monitoring-basics/#apply-notifications-to-hosts-and-services
+icinga2_defaults_notification_apply_rules:
+  #
+  mail-host:
+    type: host
+    import: generic-host-notification
+    users: []
+    user_groups: []
+    # interval: '2h'
+    # extra_parameters: |
+    #   vars.notification_logtosyslog = true
+    assign_where: "host.vars.notification.mail"
+  #
+  mail-service:
+    type: service
+    import: generic-service-notification
+    users: []
+    user_groups: []
+    # interval: '2h'
+    # extra_parameters: |
+    #   vars.notification_logtosyslog = true
+    assign_where: "host.vars.notification.mail"
+
+icinga2_defaults_notification_templates:
+  #
+  generic-service-notification:
+    description: |
+      generic service notification to mail for 24/7 alarms
+    command: "mail-service-notification"
+    # interval: 15m
+    period: "24x7"
+    extra_parameters: |
+      vars += {
+        // notification_icingaweb2url = "https://www.example.com/icingaweb2"
+        // notification_from = "Icinga 2 Host Monitoring <icinga@example.com>"
+        notification_logtosyslog = false
+      }
+    states:
+      - Warning
+      - Critical
+      - Unknown
+    types:
+      - Problem
+      - Acknowledgement
+      - Recovery
+      - Custom
+      - FlappingStart
+      - FlappingEnd
+      - DowntimeStart
+      - DowntimeEnd
+      - DowntimeRemoved
+  #
+  generic-host-notification:
+    description: |
+      generic host notification to mail for 24/7 alarms
+    command: "mail-host-notification"
+    # interval: 15m
+    period: "24x7"
+    extra_parameters: |
+      vars += {
+        // notification_icingaweb2url = "https://www.example.com/icingaweb2"
+        // notification_from = "Icinga 2 Host Monitoring <icinga@example.com>"
+        notification_logtosyslog = false
+      }
+    states:
+      - Up
+      - Down
+    types:
+      - Problem
+      - Acknowledgement
+      - Recovery
+      - Custom
+      - FlappingStart
+      - FlappingEnd
+      - DowntimeStart
+      - DowntimeEnd
+      - DowntimeRemoved
+
+icinga2_defaults_notification_objects:
+  #
+  mail-host-notification:
+    description: |
+      default mail notification
+    command:
+      - ConfigDir
+      - '"/scripts/mail-host-notification.sh"'
+    extra_parameters: |
+      arguments += {
+        "-4" = "$notification_address$"
+        "-6" = "$notification_address6$"
+        "-b" = "$notification_author$"
+        "-c" = "$notification_comment$"
+        "-d" = {
+          required = true
+          value = "$notification_date$"
+        }
+        "-f" = {
+          value = "$notification_from$"
+          description = "Set from address. Requires GNU mailutils (Debian/Ubuntu) or mailx (RHEL/SUSE)"
+        }
+        "-i" = "$notification_icingaweb2url$"
+        "-l" = {
+          required = true
+          value = "$notification_hostname$"
+        }
+        "-n" = {
+          required = true
+          value = "$notification_hostdisplayname$"
+        }
+        "-o" = {
+          required = true
+          value = "$notification_hostoutput$"
+        }
+        "-r" = {
+          required = true
+          value = "$notification_useremail$"
+        }
+        "-s" = {
+          required = true
+          value = "$notification_hoststate$"
+        }
+        "-t" = {
+          required = true
+          value = "$notification_type$"
+        }
+        "-v" = "$notification_logtosyslog$"
+      }
+
+      vars += {
+        notification_address = "$address$"
+        notification_address6 = "$address6$"
+        notification_author = "$notification.author$"
+        notification_comment = "$notification.comment$"
+        notification_type = "$notification.type$"
+        notification_date = "$icinga.long_date_time$"
+        notification_hostname = "$host.name$"
+        notification_hostdisplayname = "$host.display_name$"
+        notification_hostoutput = "$host.output$"
+        notification_hoststate = "$host.state$"
+        notification_useremail = "$user.email$"
+      }
+  #
+
+  mail-service-notification:
+    description: |
+      default mail notification
+    command:
+      - ConfigDir
+      - '"/scripts/mail-service-notification.sh"'
+    extra_parameters: |
+      arguments += {
+        "-4" = "$notification_address$"
+        "-6" = "$notification_address6$"
+        "-b" = "$notification_author$"
+        "-c" = "$notification_comment$"
+        "-d" = {
+          required = true
+          value = "$notification_date$"
+        }
+        "-e" = {
+          required = true
+          value = "$notification_servicename$"
+        }
+        "-f" = {
+          value = "$notification_from$"
+          description = "Set from address. Requires GNU mailutils (Debian/Ubuntu) or mailx (RHEL/SUSE)"
+        }
+        "-i" = "$notification_icingaweb2url$"
+        "-l" = {
+          required = true
+          value = "$notification_hostname$"
+        }
+        "-n" = {
+          required = true
+          value = "$notification_hostdisplayname$"
+        }
+        "-o" = {
+          required = true
+          value = "$notification_serviceoutput$"
+        }
+        "-r" = {
+          required = true
+          value = "$notification_useremail$"
+        }
+        "-s" = {
+          required = true
+          value = "$notification_servicestate$"
+        }
+        "-t" = {
+          required = true
+          value = "$notification_type$"
+        }
+        "-u" = {
+          required = true
+          value = "$notification_servicedisplayname$"
+        }
+        "-v" = "$notification_logtosyslog$"
+      }
+
+      vars += {
+        notification_address = "$address$"
+        notification_address6 = "$address6$"
+        notification_author = "$notification.author$"
+        notification_comment = "$notification.comment$"
+        notification_type = "$notification.type$"
+        notification_date = "$icinga.long_date_time$"
+        notification_hostname = "$host.name$"
+        notification_hostdisplayname = "$host.display_name$"
+        notification_servicename = "$service.name$"
+        notification_serviceoutput = "$service.output$"
+        notification_servicestate = "$service.state$"
+        notification_useremail = "$user.email$"
+        notification_servicedisplayname = "$service.display_name$"
+      }
+
+...

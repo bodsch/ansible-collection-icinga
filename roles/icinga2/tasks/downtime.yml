@@ -1,0 +1,62 @@
+---
+
+- name: define primary icinga2 master
+  ansible.builtin.set_fact:
+    icinga2_primary_master: "{{ icinga2_masters | primary_master }}"
+  tags:
+    - icinga2
+    - downtime_schedule
+    - downtime_remove
+
+- name: check that all necessary information is available
+  ansible.builtin.assert:
+    that:
+      - icinga2_downtime_comment is defined and icinga2_downtime_comment | length != 0
+      - icinga2_downtime_duration is defined and icinga2_downtime_duration | int != 0
+      - icinga2_primary_master is defined
+      - icinga2_api.user is defined
+      - icinga2_api.password is defined
+      - icinga2_downtime_system_name is defined
+
+- name: check if the primary icinga master {{ icinga2_primary_master }} are available
+  ansible.builtin.wait_for:
+    host: "{{ icinga2_primary_master }}"
+    port: "{{ icinga2_master_port | default(5665) }}"
+    delay: 1              # No wait before first check (sec)
+    timeout: 5            # Stop checking after timeout (sec)
+    connect_timeout: 3
+  ignore_errors: false
+  retries: 10
+  delay: 10
+  tags:
+    - icinga2
+    - downtime_schedule
+    - downtime_remove
+  when:
+    - icinga2_primary_master is defined
+    - icinga2_primary_master == ansible_fqdn
+
+- name: schedule downtime
+  icinga2_downtime:
+    host: "https://localhost"
+    username: "{{ icinga2_api.user }}"
+    password: "{{ icinga2_api.password }}"
+    comment: "{{ icinga2_downtime_comment }}"
+    hostnames: "{{ icinga2_downtime_system_name }}"
+    duration: "{{ icinga2_downtime_duration }}"
+    start_time: "{{ downtime_start }}"
+    end_time: "{{ downtime_end }}"
+    state: present
+  delegate_to: "{{ icinga2_primary_master }}"
+  vars:
+    downtime_start: "{{ ansible_date_time.epoch }}"
+    downtime_end: "{{ downtime_start | int + icinga2_downtime_duration * 60 }}"
+  tags:
+    - icinga2
+    - downtime_schedule
+  when:
+    - icinga2_primary_master is defined
+    - icinga2_primary_master == ansible_fqdn
+
+# TODO
+# - name: remove downtime

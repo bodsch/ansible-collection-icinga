@@ -1,0 +1,66 @@
+---
+
+# primary master
+#
+- name: primary master
+  when:
+    - icinga2_primary_master is defined
+    - icinga2_primary_master == ansible_fqdn
+  block:
+    - name: check if {{ icinga2_pki_cadir }}/ca.crt exists
+      ansible.builtin.stat:
+        path: "{{ icinga2_pki_cadir }}/ca.crt"
+      register: _icinga2_ca_file
+      tags:
+        - icinga2
+
+    - name: create icinga2 CA
+      icinga2_ca:
+        hostname: "{{ inventory_hostname }}"
+        common_name: "{{ icinga2_certificate_cn }}"
+        force: false
+      when:
+        - not _icinga2_ca_file.stat.exists
+      tags:
+        - icinga2
+
+    # renew stat with the ca and cert files
+    #
+    - name: check if {{ icinga2_pki_cadir }}/ca.crt exists
+      ansible.builtin.stat:
+        path: "{{ icinga2_pki_cadir }}/ca.crt"
+      register: _icinga2_ca_file
+
+    - name: check if {{ icinga2_pki_cadir }}/{{ icinga2_certificate_cn }}.crt exists
+      ansible.builtin.stat:
+        path: "{{ icinga2_pki_dir }}/{{ icinga2_certificate_cn }}.crt"
+      register: _icinga2_certificate_file
+
+    - name: ensure ca.crt is replicate in pki directory
+      ansible.builtin.copy:
+        src: "{{ icinga2_pki_cadir }}/ca.crt"
+        dest: "{{ icinga2_pki_dir }}/ca.crt"
+        owner: "{{ icinga2_user }}"
+        group: "{{ icinga2_group }}"
+        mode: 0640
+        remote_src: true
+      tags:
+        - icinga2
+      when:
+        _icinga2_ca_file.stat.exists
+
+    - name: create symlink from {{ inventory_hostname }} to {{ icinga2_certificate_cn }}
+      ansible.builtin.file:
+        src: "{{ icinga2_pki_dir }}/{{ inventory_hostname }}.{{ item }}"
+        dest: "{{ icinga2_pki_dir }}/{{ icinga2_certificate_cn }}.{{ item }}"
+        owner: "{{ icinga2_user }}"
+        group: "{{ icinga2_group }}"
+        state: link
+      with_items:
+        - key
+        - crt
+      when:
+        - inventory_hostname != icinga2_certificate_cn
+        - not _icinga2_certificate_file.stat.exists
+
+...

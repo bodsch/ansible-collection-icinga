@@ -1,0 +1,38 @@
+---
+
+- name: disable icinga2 features
+  icinga2_features:
+    features: "{{ icinga2_master_features_disabled }}"
+    state: absent
+  notify:
+    - check configuration
+    - restart icinga2
+  tags:
+    - icinga2
+    - features
+
+- name: features api
+  ansible.builtin.include_tasks: features/api.yml
+
+- name: features notification
+  ansible.builtin.include_tasks: features/notification.yml
+
+- name: features ido
+  ansible.builtin.include_tasks: features/ido.yml
+
+- name: features icingadb
+  ansible.builtin.include_tasks: features/icingadb.yml
+
+- name: features graphite
+  ansible.builtin.include_tasks: features/graphite.yml
+
+- name: features influxdb
+  ansible.builtin.include_tasks: features/influxdb.yml
+
+- name: features influxdb2
+  ansible.builtin.include_tasks: features/influxdb2.yml
+
+- name: features gelf
+  ansible.builtin.include_tasks: features/gelf.yml
+
+...

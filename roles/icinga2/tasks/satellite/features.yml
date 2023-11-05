@@ -1,0 +1,41 @@
+---
+
+- name: disable icinga2 features
+  icinga2_features:
+    state: absent
+    ignore_unknown: true
+    features:
+      - perfdata
+      - notification
+      - livestatus
+      - ido-mysql
+  notify:
+    - check configuration
+    - restart icinga2
+  tags:
+    - icinga2
+    - features
+
+- name: configure api feature
+  block:
+    - name: configure api feature
+      ansible.builtin.template:
+        src: etc/icinga2/features/api.conf.j2
+        dest: /etc/icinga2/features-available/api.conf
+        owner: "{{ icinga2_user }}"
+        group: "{{ icinga2_group }}"
+        mode: 0666
+
+    - name: enable api feature
+      icinga2_features:
+        features:
+          - api
+        state: present
+      notify:
+        - check configuration
+        - restart icinga2
+      tags:
+        - icinga2
+        - features
+
+...

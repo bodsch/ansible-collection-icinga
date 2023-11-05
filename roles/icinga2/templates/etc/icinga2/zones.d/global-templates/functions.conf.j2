@@ -1,0 +1,18 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+// {{ ansible_managed }}
+
+globals.check_dictionary = function(config, key) {
+  log(config)
+  log(key)
+  if (typeof(config) != Dictionary) {
+    log("config != Dictionary")
+    log( typeof(config).to_string() )
+    return false
+  }
+  for( k => v in config) {
+    if(k == key) {
+      return v
+    }
+  }
+  return false
+}

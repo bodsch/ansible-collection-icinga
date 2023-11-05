@@ -1,0 +1,18 @@
+---
+
+icinga2_mariadb_packages:
+  - mariadb
+
+icinga2_mariadb_build_packages:
+  - mariadb-devel
+  - gcc
+  - gcc-c++
+  - autoconf
+  - automake
+  - python3-devel
+
+icinga2_os_requirements:
+  - iproute
+  - python3-pip
+
+...

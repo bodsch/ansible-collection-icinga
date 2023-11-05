@@ -1,0 +1,328 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+// {{ ansible_managed }}
+{% set _name = "" %}
+{% if icinga2_apply_service %}
+  {% for c, v in icinga2_apply_service.items() %}
+    {% set v, _name = v | bodsch.icinga.apply_service_name(c) %}
+    {# set _v = v.pop('name') #}
+    {# set _v = v.pop('for') #}
+    {% if v['description'] is defined %}
+// {{ v['description'] }}
+      {% set _v = v.pop('description') %}
+    {% endif %}
+apply Service {{ _name }} {
+    {% for k, ve in icinga2_apply_service[c].items()  %}
+      {% if k == 'import' %}
+  {{ k }} "{{ ve }}"
+      {% elif k in ['check_command', 'display_name', 'notes', 'notes_url', 'event_command'] %}
+        {% if k == 'display_name' and '+' in ve %}
+  {{ k }} = {{ ve }}
+        {% else %}
+  {{ k }} = "{{ ve }}"
+        {% endif %}
+      {% elif k == 'extra_parameters' %}
+  {{ ve | indent(2) }}
+      {% elif k == 'assign_where' %}
+  assign where {{ ve }}
+      {% elif k == 'ignore_where' %}
+  ignore where {{ ve }}
+      {% else %}
+        {% if ve | bodsch.core.type == "bool" %}
+  {{ k }} = {{ ve | bodsch.core.config_bool(true_as='true', false_as='false') }}
+        {% else %}
+  {{ k }} = {{ ve }}
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+}
+  {% endfor %}
+
+{% endif %}
+
+// --------------------------------------------------------------------------------------
+/* NOT USED!
+
+apply Service "dnssec " for (zone => config in host.vars.zones) {
+  import "generic-service"
+  check_command = "delv"
+  check_interval = 2h
+  vars += config
+  assign where host.vars.zones
+}
+
+apply Service "dns" {
+  import "generic-service"
+  check_command = "dns"
+  check_interval = 1m
+  event_command = "restart_service"
+
+  max_check_attempts = 2
+
+  vars = {
+    "dns_server" = "192.168.0.5"
+    "dns_lookup" = "dunkelzahn.matrix.lan"
+    "dns_timeout" = 2
+    "procs_command" = "bind9"
+  }
+
+  assign where host.vars.zones
+}
+
+
+
+{% if ansible_swaptotal_mb != 0 %}
+//  we need an better implementation
+//
+//    - ansible_swaptotal_mb = 0
+//    - ansible_system_vendor = NA
+//    - ansible_virtualization_type = openvz
+//    - ansible_virtualization_role = guest
+apply Service "swap" {
+  import "generic-service"
+
+  check_command = "swap"
+
+  assign where host.name == NodeName
+}
+{% endif %}
+
+
+
+
+apply Service "DNS resolution - google" {
+  import "generic-service"
+
+  check_command = "dns"
+  vars.dns_lookup = "$host_name$"
+  vars.dns_server = "8.8.8.8"
+
+  assign where "DNS-check" in host.groups
+}
+
+apply Service "DNS resolution - OpenDNS" {
+  import "generic-service"
+
+  check_command = "dns"
+  vars.dns_lookup = "$host_name$"
+  vars.dns_server = "208.67.222.222"
+
+  assign where "DNS-check" in host.groups
+}
+
+
+
+apply Service "sensors" to Host {
+  import "generic-service"
+
+  display_name = "sensors"
+
+  assign where "sensors" in host.vars.services
+
+  check_command = "sensors"
+}
+
+apply Service "redis" to Host {
+  import "generic-service"
+
+  display_name = "redis"
+
+  assign where "redis" in host.vars.services
+
+  check_command = "check_redis"
+}
+
+apply Service "mysql" to Host {
+  import "generic-service"
+
+  display_name = "MySQL"
+
+  assign where "mysql" in host.vars.services
+
+  check_command = "mysql"
+
+  vars += {
+    "mysql_hostname" = "127.0.0.1"
+    "mysql_file" = "/usr/local/etc/.my.cnf"
+  }
+}
+
+apply Service "proc_icinga2" to Host {
+  import "generic-service"
+
+  display_name = "icinga2"
+
+  assign where "icinga2" in host.vars.services
+
+  check_command = "procs"
+
+  vars = {
+    "procs_warning" = 2
+    "procs_critical" = 2
+    "procs_timeout" = 3
+    "procs_command" = "icinga2"
+  }
+
+  #max_check_attempts = 5
+  #retry_interval = 10
+  #enable_notifications = false
+  #enable_flapping = true
+  # enable_perfdata = true
+}
+
+
+
+apply Service "dhcp" to Host {
+  import "generic-service"
+
+  display_name = "DHCP"
+
+  assign where "dhcp" in host.vars.services
+
+  check_command = "dhcp"
+
+  vars += {
+    "dhcp_unicast" = "true"
+    "dhcp_serverip" = "192.168.0.5"
+  }
+}
+
+apply Service "ntp" to Host {
+  import "generic-service"
+
+  display_name = "NTP"
+
+  assign where "ntp" in host.vars.services
+
+  check_command = "ntp_time"
+
+  vars += {
+    "ntp_address" = "192.168.0.5"
+    "ntp_quiet" = "true"
+    "ntp_warning" = "0.5"
+    "ntp_critical" = "1"
+    "ntp_ipv4" = "true"
+  }
+}
+
+apply Service "cups" to Host {
+  import "generic-service"
+
+  display_name = "Cups"
+
+  assign where "cups" in host.vars.services
+
+  check_command = "cups"
+
+  vars += {
+    "cups_host" = "192.168.0.5"
+    "cups_warning" = "2"
+    "cups_critical" = "4"
+  }
+}
+
+
+apply Service "docker-containers" to Host {
+  import "generic-service"
+
+  display_name = "docker containers"
+
+  assign where host.vars.docker
+
+  check_command = "check-docker"
+
+  vars += {
+    "docker_containers" = host.vars.docker
+  }
+}
+
+apply Service "file_" for ( file => config in host.vars.file_age) {
+  import "generic-service"
+  # import "icinga-satellite-service"
+  check_command = "file_age"
+
+  var warn_time = check_dictionary( config, "warning_time" )
+  var crit_time = check_dictionary( config, "critical_time" )
+  var warn_size = check_dictionary( config, "warning_size" )
+  var crit_size = check_dictionary( config, "critical_size" )
+  var description = check_dictionary( config, "description" )
+
+  if( description ) {
+    display_name = description
+  } else {
+    display_name = "File Age for " + file
+  }
+  notes        = "check a file age"
+
+  vars = {
+    "file_age_file" = file
+  }
+
+  if( warn_time && crit_time ) {
+    vars += {
+      "file_age_warning_time"  = config.warning_time
+      "file_age_critical_time" = config.critical_time
+    }
+  }
+
+  if( warn_size && crit_size ) {
+    vars += {
+      "file_age_warning_size"  = config.warning_size
+      "file_age_critical_size" = config.critical_size
+    }
+  }
+
+//    "file_age_ignoremissing" = config.ignoremissing
+
+  max_check_attempts = 5
+  check_interval = 10m
+  retry_interval = 2
+  enable_notifications = true
+
+
+  assign where host.vars.file_age
+}
+
+apply Service "mailqueue" to Host {
+  import "generic-service"
+
+  display_name = "mailqueue size"
+
+  assign where host.vars.mailqueue
+
+  check_command = "postfix_queue"
+}
+
+
+apply Service "amavis" to Host {
+  import "generic-service"
+
+  display_name = "check mail scanner"
+
+  assign where "amavis" in host.vars.services
+
+  check_command = "amavis"
+}
+
+apply Service "proc_sqlgrey" to Host {
+  import "generic-service"
+
+  display_name = "sqlgrey process"
+
+  assign where "sqlgrey" in host.vars.services
+
+  check_command = "procs"
+
+  vars = {
+    "procs_warning" = 2
+    "procs_critical" = 2
+    "procs_timeout" = 3
+    "procs_command" = "sqlgrey"
+  }
+
+  #max_check_attempts = 5
+  #retry_interval = 10
+  #enable_notifications = false
+  #enable_flapping = true
+  # enable_perfdata = true
+}
+*/

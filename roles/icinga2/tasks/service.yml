@@ -1,0 +1,37 @@
+---
+
+- name: validate icinga2 configuration
+  tags:
+    - icinga2_service
+  icinga2_daemon:
+    parameters:
+      - --validate
+      - --log-level debug
+      - --config /etc/icinga2/icinga2.conf
+  register: icinga2_validate_config
+
+- name: validated config
+  tags:
+    - icinga2_service
+  ansible.builtin.debug:
+    var: icinga2_validate_config
+  when:
+    - icinga2_validate_config is defined
+    - icinga2_validate_config.failed is defined
+    - not icinga2_validate_config
+
+- name: enable icinga2 services
+  tags:
+    - icinga2_service
+  ansible.builtin.service:
+    name: icinga2
+    enabled: true
+
+- name: ensure services are started
+  tags:
+    - icinga2_service
+  ansible.builtin.service:
+    name: icinga2
+    state: started
+  when:
+    - icinga2_validate_config is defined

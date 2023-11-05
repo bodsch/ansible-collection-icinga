@@ -1,0 +1,106 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+// {{ ansible_managed }}
+{% import 'templates/macros.j2' as tpl with context %}
+
+{#
+ #  icinga2 master or primary
+ #}
+{% if icinga2_masters | bodsch.core.type == "dict" %}
+  {% set icinga2_reordered_masters = icinga2_masters | bodsch.icinga.reorder_master %}
+  {% set icinga2_master = '' %}
+  {% set _keys = icinga2_reordered_masters.keys() %}
+  {% for endpoint in _keys %}
+{{
+  tpl.endpoint(
+    endpoint = endpoint,
+    host = icinga2_reordered_masters.get(endpoint).get('ip')
+  )
+}}
+   {% endfor %}
+{{
+  tpl.zone(
+    endpoints = _keys,
+    zone = "primary"
+  )
+}}
+{% endif %}
+{#
+ #  icinga2 satellite
+ #}
+{% if icinga2_mode == 'satellite' %}
+  {% if icinga2_satellite_zone is defined %}
+    {% if icinga2_satellites | bodsch.core.type == "dict" %}
+      {% if icinga2_satellites[icinga2_satellite_zone] is defined %}
+        {% set satellite_zone = icinga2_satellites[icinga2_satellite_zone] %}
+        {% set _keys = satellite_zone.keys() %}
+        {% for endpoints in _keys %}
+          {% if satellite_zone[endpoints]['ip'] is defined %}
+            {% set satellite_host = satellite_zone[endpoints]['ip'] %}
+          {% else %}
+            {% set satellite_host = _keys %}
+          {% endif %}
+{{
+  tpl.endpoint(
+    endpoint = endpoints,
+    host = satellite_host
+  )
+}}
+        {% endfor %}
+{{
+  tpl.zone(
+    zone = icinga2_satellite_zone,
+    endpoints = _keys, parent = "primary"
+  )
+}}
+      {% else %}
+// no zone config for '{{ icinga2_satellite_zone }}' found!
+{{
+  tpl.endpoint(
+    endpoint = icinga2_satellite_zone,
+    host = icinga2_satellite_zone
+  )
+}}
+{{
+  tpl.zone(
+    zone = icinga2_satellite_zone,
+    endpoints = icinga2_satellite_zone, parent = "primary"
+  )
+}}
+      {% endif %}
+    {% else %}
+/*
+  Use the DNS resolver on the Ansible controller.
+      {# use dns resolver on ansible controller #}
+      {% set _ip = "" %}
+      {% set dns_data = icinga2_satellite_zone | bodsch.core.dns_lookup() %}
+      {% set dns_error = dns_data.get("error", False) %}
+      {% set dns_addrs = dns_data.get("addrs", []) %}
+      {% if not dns_error and dns_addrs | count > 0 %}
+        {% if dns_addrs | count > 1 %}
+  multiple IPs defined: {{ dns_addrs }}
+        {% endif %}
+        {% set _ip = dns_addrs[0] %}
+      {% endif %}
+      {% if _ip | length == 0 %}
+        {% set _ip = icinga2_satellite_zone %}
+      {% endif %}
+*/
+      {# endpoint definition final #}
+{{
+  tpl.endpoint(
+    endpoint = icinga2_satellite_zone,
+    host = _ip
+  )
+}}
+{{
+  tpl.zone(
+    zone = icinga2_satellite_zone,
+    endpoints = icinga2_satellite_zone, parent = "primary"
+  )
+}}
+    {% endif %}
+  {% endif %}
+{% endif %}
+
+object Zone "global-templates" { global = true }
+object Zone "director-global"  { global = true }

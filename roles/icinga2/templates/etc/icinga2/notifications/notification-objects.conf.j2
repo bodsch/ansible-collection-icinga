@@ -1,0 +1,26 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+// {{ ansible_managed }}
+
+{% if icinga2_notification_objects  is defined and
+      icinga2_notification_objects | count > 0 %}
+  {% for n, data in icinga2_notification_objects.items() %}
+    {% if data['description'] is defined %}
+// {{ data['description'] }}
+      {% set _ = data.pop('description') %}
+    {% endif %}
+object NotificationCommand "{{ n }}" {
+    {% for key, value in data.items() %}
+      {% if key in ["import"] %}
+  {{ key }} = "{{ value  }}"
+      {% elif key in ["command"] %}
+  {{ key }} = [  {{ value | join(' + ') }} ]
+      {% elif key == 'extra_parameters' %}
+  {{ value | indent(2) }}
+      {% else %}
+  {{ key }} = {{ value }}
+      {% endif %}
+    {% endfor %}
+}
+
+  {% endfor %}
+{% endif %}

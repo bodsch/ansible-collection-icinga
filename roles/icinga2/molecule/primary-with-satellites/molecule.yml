@@ -1,0 +1,175 @@
+---
+dependency:
+  name: galaxy
+  #options:
+  #  ignore-certs: true
+  #  ignore-errors: false
+  #  # role-file: requirements.yml
+  #  # requirements-file: collections.yml
+
+driver:
+  name: docker
+
+lint: |
+  set -e
+  yamllint .
+  ansible-lint .
+  flake8 .
+
+platforms:
+  - name: database
+    image: "bodsch/ansible-debian:11"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    docker_host: "${DOCKER_HOST:-unix://run/docker.sock}"
+    privileged: true
+    pre_build_image: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    docker_networks:
+      - name: icinga2_satellites
+        ipam_config:
+          - subnet: "10.17.0.0/24"
+            gateway: "10.17.0.2"
+    networks:
+      - name: icinga2_satellites
+        ipv4_address: "10.17.0.10"
+
+  - name: instance
+    image: "bodsch/ansible-${DISTRIBUTION:-debian:11}"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    docker_host: "${DOCKER_HOST:-unix://run/docker.sock}"
+    privileged: true
+    pre_build_image: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    groups:
+      - icinga
+      - icinga_primary
+    networks:
+      - name: icinga2_satellites
+        ipv4_address: "10.17.0.20"
+
+  - name: satellite-01
+    image: "bodsch/ansible-${DISTRIBUTION:-debian:11}"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    docker_host: "${DOCKER_HOST:-unix://run/docker.sock}"
+    privileged: true
+    pre_build_image: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    groups:
+      - icinga
+      - icinga_satellite
+    networks:
+      - name: icinga2_satellites
+        ipv4_address: "10.17.0.31"
+
+  - name: satellite-02
+    image: "bodsch/ansible-${DISTRIBUTION:-debian:11}"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    docker_host: "${DOCKER_HOST:-unix://run/docker.sock}"
+    privileged: true
+    pre_build_image: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    groups:
+      - icinga
+      - icinga_satellite
+    networks:
+      - name: icinga2_satellites
+        ipv4_address: "10.17.0.32"
+
+  - name: satellite-03
+    image: "bodsch/ansible-${DISTRIBUTION:-debian:11}"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    docker_host: "${DOCKER_HOST:-unix://run/docker.sock}"
+    privileged: true
+    pre_build_image: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    groups:
+      - icinga
+      - icinga_satellite
+    networks:
+      - name: icinga2_satellites
+        ipv4_address: "10.17.0.33"
+
+  - name: satellite-04
+    image: "bodsch/ansible-${DISTRIBUTION:-debian:11}"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    docker_host: "${DOCKER_HOST:-unix://run/docker.sock}"
+    privileged: true
+    pre_build_image: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    groups:
+      - icinga
+      - icinga_satellite
+    networks:
+      - name: icinga2_satellites
+        ipv4_address: "10.17.0.34"
+
+  - name: satellite-05
+    image: "bodsch/ansible-${DISTRIBUTION:-debian:11}"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    docker_host: "${DOCKER_HOST:-unix://run/docker.sock}"
+    privileged: true
+    pre_build_image: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    groups:
+      - icinga
+      - icinga_satellite
+    networks:
+      - name: icinga2_satellites
+        ipv4_address: "10.17.0.35"
+
+provisioner:
+  name: ansible
+  ansible_args:
+    - --diff
+    - -v
+  config_options:
+    # set tags
+    config_options:
+      tags:
+        run: "" # tag1,tag2,tag3
+    # or env
+    env:
+      ANSIBLE_RUN_TAGS: "" # tag1,tag2,tag3
+    defaults:
+      deprecation_warnings: true
+      stdout_callback: yaml
+      callbacks_enabled: profile_tasks
+      gathering: smart
+      fact_caching: jsonfile
+      fact_caching_timeout: 8640
+      fact_caching_connection: "${MOLECULE_EPHEMERAL_DIRECTORY}/ansible_facts"
+
+scenario:
+  create_sequence:
+    - dependency
+    - create
+    - prepare
+  converge_sequence:
+    - dependency
+    - create
+    - prepare
+    - converge
+  destroy_sequence:
+    - dependency
+    - cleanup
+    - destroy
+  test_sequence:
+    # - lint
+    - destroy
+    - dependency
+    - syntax
+    - create
+    - prepare
+    - converge
+    - verify
+    - destroy
+
+verifier:
+  name: testinfra

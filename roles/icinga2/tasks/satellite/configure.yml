@@ -1,0 +1,40 @@
+---
+
+- name: create templates.conf
+  ansible.builtin.template:
+    src: etc/icinga2/global-templates.conf.j2
+    dest: /etc/icinga2/global-templates.conf
+    owner: "{{ icinga2_user }}"
+    group: "{{ icinga2_group }}"
+    mode: 0666
+    backup: true
+  notify:
+    - check configuration
+    - restart icinga2
+
+- name: create static zone file on icinga2 satellite
+  ansible.builtin.template:
+    src: etc/icinga2/zones.conf.j2
+    dest: /etc/icinga2/zones.conf
+    owner: "{{ icinga2_user }}"
+    group: "{{ icinga2_group }}"
+    mode: 0666
+  # when: not icinga2_satellite_has_api_connection | bool
+  notify:
+    - check configuration
+    - restart icinga2
+
+# - name: remove static zone file on icinga2 satellite
+#   copy:
+#     dest: /etc/icinga2/zones.conf
+#     content: |
+#       // icinga2_satellite_has_api_connection
+#     owner: "{{ icinga2_user }}"
+#     group: "{{ icinga2_group }}"
+#     mode: 0666
+#   when: icinga2_satellite_has_api_connection | bool
+#   notify:
+#     - check configuration
+#     - restart icinga2
+#     - reload icinga2 master config
+#

@@ -1,0 +1,197 @@
+---
+
+- name: install packages for support databases
+  ansible.builtin.package:
+    name: "{{ icinga2_mariadb_packages }}"
+    state: present
+
+- name: python support
+  when:
+    - icinga2_mariadb_python_packages is defined
+    - icinga2_mariadb_python_packages | length > 0
+  block:
+    - name: create pip requirements file
+      bodsch.core.pip_requirements:
+        name: icinga2-ido
+        requirements: "{{ icinga2_mariadb_python_packages }}"
+      register: pip_requirements
+
+    - name: fail if pip not installed
+      ansible.builtin.fail:
+        msg: python pip is not installed
+      when:
+        - not pip_requirements.pip.present
+
+    - name: install docker python packages  # noqa no-handler
+      ansible.builtin.pip:
+        executable: pip3
+        requirements: "{{ pip_requirements.requirements_file }}"
+        state: present
+      register: pip_install
+      ignore_errors: true
+      no_log: true
+      when:
+        - pip_requirements.requirements_file is defined
+        - pip_requirements.changed
+
+    - name: first run is failed, try with build
+      when:
+        - pip_install is defined
+        - pip_install.failed is defined
+        - pip_install.failed
+        - icinga2_mariadb_build_packages | default([]) | count > 0
+      block:
+        - name: install build essentials
+          ansible.builtin.package:
+            name: "{{ icinga2_mariadb_build_packages }}"
+            state: present
+
+        - name: ensure python bindings for icinga2 packages 2nd
+          ansible.builtin.pip:
+            requirements: "{{ pip_requirements.requirements_file }}"
+            state: present
+            executable: pip3
+
+        - name: uninstall build essentials
+          ansible.builtin.package:
+            name: "{{ icinga2_mariadb_build_packages }}"
+            state: absent
+
+    - name: do facts module to get latest information
+      ansible.builtin.setup:
+  rescue:
+    - name: remove python requirements file
+      bodsch.core.pip_requirements:
+        name: icinga2-ido
+        requirements: "{{ icinga2_python_requirements }}"
+        state: absent
+
+    - name: exit with fail
+      ansible.builtin.fail:
+        msg: Sorry, but a serious error occurred when installing the required Python packages.
+
+    # - name: create requirements.txt
+    #   ansible.builtin.template:
+    #     src: requirements.txt.j2
+    #     dest: /tmp/icinga2-ido-requirements.txt
+    #     mode: 0660
+    #   vars:
+    #     pip_modules: "{{ icinga2_mariadb_python_packages }}"
+    #
+    # - name: do facts module to get latest information
+    #   ansible.builtin.setup:
+    #
+    # - name: ensure python bindings for mariadb packages 1st
+    #   ansible.builtin.pip:
+    #     # executable: pip3
+    #     requirements: /tmp/icinga2-ido-requirements.txt
+    #     state: present
+    #   register: pip_install
+    #   ignore_errors: true
+    #   # no_log: true
+    #
+    # - name: install python ip modules
+    #   when:
+    #     - pip_install.failed
+    #     - icinga2_mariadb_build_packages is defined
+    #     - icinga2_mariadb_build_packages | length > 0
+    #   block:
+    #     - name: install build essentials
+    #       ansible.builtin.package:
+    #         name: "{{ icinga2_mariadb_build_packages }}"
+    #         state: present
+    #
+    #     - name: ensure python bindings for mariadb packages 2nd
+    #       ansible.builtin.pip:
+    #         requirements: /tmp/icinga2-ido-requirements.txt
+    #         state: present
+    #
+    #     - name: uninstall build essentials
+    #       ansible.builtin.package:
+    #         name: "{{ icinga2_mariadb_build_packages }}"
+    #         state: absent
+
+- name: install icinga2-ido package
+  ansible.builtin.package:
+    name: icinga2-ido-mysql
+    state: present
+  when:
+    - ansible_os_family | lower != 'archlinux'
+
+- name: database
+  when:
+    - icinga2_primary_master is defined
+    - icinga2_primary_master == ansible_fqdn
+  block:
+    - name: create database upgrade script
+      ansible.builtin.template:
+        src: database-upgrade.sh.j2
+        dest: /usr/local/bin/database-upgrade.sh
+        owner: "{{ icinga2_user }}"
+        group: "{{ icinga2_group }}"
+        mode: 0750
+
+    - name: check if configured database are available
+      ansible.builtin.wait_for:
+        host: "{{ icinga2_ido.host }}"
+        port: "{{ icinga2_ido.port }}"
+        delay: 1              # No wait before first check (sec)
+        timeout: 5            # Stop checking after timeout (sec)
+      ignore_errors: false
+      retries: 10
+      delay: 10
+
+    - name: detect mysql ido version
+      icinga2_ido_version:
+        dba_host: "{{ icinga2_ido.host }}"
+        dba_user: "{{ icinga2_ido.user }}"
+        dba_password: "{{ icinga2_ido.password }}"
+        dba_database: "{{ icinga2_ido.database }}"
+      register: _mysql_ido_version
+
+    - name: create the mysql ido schema
+      community.mysql.mysql_db:
+        name: "{{ icinga2_ido.database }}"
+        login_host: "{{ icinga2_ido.host }}"
+        login_user: "{{ icinga2_ido.user }}"
+        login_password: "{{ icinga2_ido.password }}"
+        state: import
+        target: "{{ icinga2_ido.mysql.schema_file }}"
+        config_file: ""
+      register: mysql_create_ido_schema
+      changed_when: false
+      check_mode: false
+      when:
+        - not _mysql_ido_version.exists
+
+    - name: update database schema  # noqa 'command-instead-of-shell'
+      ansible.builtin.command:
+        cmd: /usr/local/bin/database-upgrade.sh
+      changed_when: false
+      # no_log: false
+  rescue:
+
+    - name: exit with fail
+      ansible.builtin.fail:
+        msg: "Error when creating the IDO configuration!"
+
+- name: configure ido-mysql feature
+  ansible.builtin.template:
+    src: etc/icinga2/features/ido-mysql.conf.j2
+    dest: /etc/icinga2/features-available/ido-mysql.conf
+    owner: "{{ icinga2_user }}"
+    group: "{{ icinga2_group }}"
+    mode: 0660
+
+- name: enable ido-mysql feature
+  icinga2_features:
+    features:
+      - ido-mysql
+    state: present
+  notify:
+    - restart icinga2
+  tags:
+    - icinga2
+    - features
+
+...

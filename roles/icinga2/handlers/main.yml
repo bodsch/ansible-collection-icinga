@@ -1,0 +1,55 @@
+---
+
+- name: yum-clean-metadata  # noqa no-changed-when
+  ansible.builtin.command: yum clean metadata
+  args:
+    warn: false
+
+- name: check configuration
+  icinga2_daemon:
+    parameters:
+      - --validate
+      - --log-level debug
+      - --config /etc/icinga2/icinga2.conf
+  register: icinga2_validate_config
+  notify:
+    - validated config
+
+- name: validated config
+  ansible.builtin.debug:
+    var: icinga2_validate_config
+  when:
+    - icinga2_validate_config is defined
+
+- name: reload icinga2
+  ansible.builtin.service:
+    name: icinga2
+    state: reloaded
+
+- name: restart icinga2
+  run_once: true
+  ansible.builtin.service:
+    name: icinga2
+    state: restarted
+
+- name: reload icinga2 master config
+  run_once: true
+  icinga2_reload_master:
+    requester: "{{ ansible_fqdn }}"
+    wait: 2
+    timeout: 4
+  ignore_errors: false
+  delegate_to: "{{ item.key }}"
+  with_dict:
+    "{{ icinga2_masters }}"
+  register: _icinga2_master_reloaded
+  notify:
+    - reloaded config
+
+- name: reloaded config
+  ansible.builtin.debug:
+    var: _icinga2_master_reloaded
+  when:
+    - _icinga2_master_reloaded is defined
+
+...

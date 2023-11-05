@@ -1,0 +1,28 @@
+---
+
+- name: detect if icinga2 exists
+  ansible.builtin.stat:
+    path: /usr/sbin/icinga2
+  register: icinga2_binary_file
+
+- name: detect installed icinga2 version
+  icinga2_version:
+  register: installed_icinga2_version
+  when:
+    - icinga2_binary_file.stat.exists
+
+- name: define icinga2 version
+  ansible.builtin.set_fact:
+    icinga2_installed: true
+    icinga2_installed_version: "{{ installed_icinga2_version.version }}"
+  when:
+    - installed_icinga2_version is defined
+    - installed_icinga2_version.rc is defined
+    - installed_icinga2_version.rc | int == 0
+
+- name: installed icinga2 version
+  ansible.builtin.debug:
+    verbosity: 4
+    var: icinga2_installed_version | default('not installed')
+
+...

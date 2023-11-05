@@ -1,0 +1,28 @@
+{#
+#   List of macros for icinga2
+#}
+
+{% macro endpoint(endpoint, host = None, port = "5665" ) %}
+object Endpoint "{{ endpoint }}" {
+  {% if host and host | string | length > 0 %}
+  host = "{{ host }}"
+  {% endif %}
+  port = "{{ port }}"
+}
+{% endmacro %}
+
+
+{% macro zone(endpoints, zone, parent = None) %}
+object Zone "{{ zone }}" {
+  {% if endpoints is defined and
+        endpoints | bodsch.core.type == "list" or
+        endpoints | bodsch.core.type == "dict_keys" %}
+  endpoints = [ "{{ endpoints | join( '", "') }}" ]
+  {% else %}
+  endpoints = [ "{{ endpoints  }}" ]
+  {% endif %}
+  {% if parent %}
+  parent = "{{ parent }}"
+  {% endif %}
+}
+{% endmacro %}

@@ -1,0 +1,27 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+// {{ ansible_managed }}
+{# https://icinga.com/docs/icinga2/latest/doc/09-object-types/#graphitewriter #}
+
+{% set _attr = ['host','port','host_name_template',
+  'service_name_template','enable_send_thresholds','enable_send_metadata',
+  'enable_ha'] %}
+
+{% if icinga2_features.graphite is defined and
+      icinga2_features.graphite.host is defined %}
+object GraphiteWriter "graphite" {
+  {% if icinga2_features.graphite is defined and
+        icinga2_features.graphite | count != 0 %}
+    {% for k, v in icinga2_features.graphite.items() %}
+      {% if k in _attr %}
+        {% if v is sameas true or v is sameas false %}
+  {{ k }} = {{ v | bodsch.core.config_bool(true_as='true', false_as='false') }}
+        {% elif k is string %}
+  {{ k }} = "{{ v }}"
+        {% else %}
+  {{ k }} = {{ v }}
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+}
+{% endif %}

@@ -1,0 +1,70 @@
+---
+
+- name: python support
+  tags:
+    - icinga2_install
+  when:
+    - icinga2_python_requirements is defined
+    - icinga2_python_requirements | length > 0
+  block:
+    - name: create pip requirements file
+      bodsch.core.pip_requirements:
+        name: icinga2
+        requirements: "{{ icinga2_python_requirements }}"
+      register: pip_requirements
+
+    - name: fail if pip not installed
+      ansible.builtin.fail:
+        msg: python pip is not installed
+      when:
+        - not pip_requirements.pip.present
+
+    - name: install docker python packages  # noqa no-handler
+      ansible.builtin.pip:
+        executable: pip3
+        requirements: "{{ pip_requirements.requirements_file }}"
+        state: present
+      register: pip_install
+      ignore_errors: true
+      no_log: true
+      when:
+        - pip_requirements.requirements_file is defined
+        - pip_requirements.changed
+
+    - name: first run is failed, try with build
+      when:
+        - pip_install is defined
+        - pip_install.failed is defined
+        - pip_install.failed
+        - icinga2_python_build_packages | default([]) | count > 0
+      block:
+        - name: install build essentials
+          ansible.builtin.package:
+            name: "{{ icinga2_python_build_packages }}"
+            state: present
+
+        - name: ensure python bindings for icinga2 packages 2nd
+          ansible.builtin.pip:
+            requirements: "{{ pip_requirements.requirements_file }}"
+            state: present
+            executable: pip3
+
+        - name: uninstall build essentials
+          ansible.builtin.package:
+            name: "{{ icinga2_python_build_packages }}"
+            state: absent
+
+    - name: do facts module to get latest information
+      ansible.builtin.setup:
+  rescue:
+    - name: remove python requirements file
+      bodsch.core.pip_requirements:
+        name: icinga2
+        requirements: "{{ icinga2_python_requirements }}"
+        state: absent
+
+    - name: exit with fail
+      ansible.builtin.fail:
+        msg: Sorry, but a serious error occurred when installing the required Python packages.
+
+...

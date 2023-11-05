@@ -1,0 +1,96 @@
+---
+
+icinga2_version: ''
+
+icinga2_use_external_repo: true
+
+icinga2_repo_archlinux: https://aur.archlinux.org/icinga2.git
+
+icinga2_validate_primary_master: true
+
+# WIP!
+icinga2_validate_restart: true
+
+icinga2_certificate_cn: '{{ ansible_fqdn }}'
+
+icinga2_overwrite_nodename: true
+
+# you MUST create an ticket salt!
+# e.g. 'cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1'
+icinga2_salt: ''
+
+tz: Etc/UTC
+icinga2_local_scriptsdir: /usr/local/scripts
+icinga2_backupdir: /srv/backup/icinga2/{{ inventory_hostname }}
+icinga2_local_backupdir: /tmp/icinga2/{{ inventory_hostname }}
+
+icinga2_rootdir: /usr/share/icinga2
+
+icinga2_sudo_cmd: []
+#  - /sbin/service foo restart
+
+# 'master' or 'satellite'
+icinga2_mode: master
+
+icinga2_ha: false
+icinga2_masters: []
+
+icinga2_satellites: []
+
+# master internal name
+icinga2_server: '{{ inventory_hostname }}'
+
+icinga2_master_features_disabled:
+  - perfdata
+  - livestatus
+
+icinga2_master_features_enabled:
+  - checker
+  - api
+  - ido-mysql
+  - mainlog
+  - notification
+
+icinga2_features: {}
+
+icinga2_api: {}
+
+icinga2_ido: {}
+
+icinga2_filelogger: {}
+
+icinga2_host_object: []
+
+icinga2_service_downtimes: []
+
+icinga2_host_downtimes: []
+
+icinga2_notification_user: {}
+
+icinga2_notification_usergroups: {}
+
+icinga2_notification_templates: {}
+
+icinga2_notification_objects: {}
+
+icinga2_notification_apply_rules: {}
+
+icinga2_checkcommands: {}
+
+icinga2_timeperiod: {}
+
+icinga2_apply_service: {}
+
+# OBSOLETE
+icinga2_aide_enabled: false
+
+icinga2_cmd_group: icingacmd
+
+icinga2_pki_dir: /var/lib/icinga2/certs
+icinga2_pki_cadir: /var/lib/icinga2/ca
+
+icinga2_hostgroups: {}
+
+icinga2_servicegroups: {}
+
+icinga2_master_port: 5665

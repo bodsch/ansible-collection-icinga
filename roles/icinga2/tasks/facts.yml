@@ -1,0 +1,47 @@
+---
+
+- name: check installed
+  ansible.builtin.include_tasks: check_installed.yml
+
+- name: detect icinga2_user
+  icinga2_prepared_vars:
+    variable: ICINGA2_USER
+  register: _icinga2_user
+
+- name: detect icinga2_group
+  icinga2_prepared_vars:
+    variable: ICINGA2_GROUP
+  register: _icinga2_group
+
+- name: define icinga2_user to '{{ _icinga2_user.value }}'
+  ansible.builtin.set_fact:
+    icinga2_user: "{{ _icinga2_user.value }}"
+  when:
+    - _icinga2_user.value is defined
+
+- name: define icinga2_group to '{{ _icinga2_group.value }}'
+  ansible.builtin.set_fact:
+    icinga2_group: "{{ _icinga2_group.value }}"
+  when:
+    - _icinga2_group.value is defined
+
+- name: create custom fact file
+  bodsch.core.facts:
+    name: icinga2
+    facts:
+      salt: "{{ icinga2_salt }}"
+      icinga2_version: "{{ icinga2_installed_version }}"
+      icinga2_user: "{{ icinga2_user | default('') }}"
+      icinga2_group: "{{ icinga2_group | default('') }}"
+
+- name: create sudo rules for icinga
+  ansible.builtin.template:
+    src: etc/sudo.j2
+    dest: /etc/sudoers.d/icinga
+    mode: 0440
+    validate: 'visudo -cf %s'
+
+- name: do facts module to get latest information
+  ansible.builtin.setup:
+
+...

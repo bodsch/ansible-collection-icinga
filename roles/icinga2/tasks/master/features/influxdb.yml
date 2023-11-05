@@ -1,0 +1,25 @@
+---
+
+- name: define influxdb feature state
+  ansible.builtin.set_fact:
+    feature_influxdb_state: "{{ 'present' if icinga2_master_features_enabled | join('|') | regex_search('influxdb') else 'absent' }}"
+
+- name: enable influxdb feature
+  icinga2_features:
+    features:
+      - influxdb
+    state: "{{ feature_influxdb_state }}"
+  notify:
+    - check configuration
+    - restart icinga2
+  tags:
+    - icinga2
+    - features
+
+- name: configure influxdb feature
+  ansible.builtin.template:
+    src: etc/icinga2/features/influxdb.conf.j2
+    dest: /etc/icinga2/features-available/influxdb.conf
+    owner: "{{ icinga2_user }}"
+    group: "{{ icinga2_group }}"
+    mode: 0660

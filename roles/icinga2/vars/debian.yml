@@ -1,0 +1,18 @@
+---
+
+icinga2_mariadb_packages:
+  - python3-mysqldb
+  - python3-pip
+
+icinga2_mariadb_build_packages:
+  - libmariadbclient-dev
+
+icinga2_python_build_packages:
+  - gcc
+  - python3-dev
+
+icinga2_os_requirements:
+  - iproute2
+  - python3-pip
+
+...

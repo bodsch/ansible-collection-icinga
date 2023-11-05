@@ -1,0 +1,63 @@
+#!/bin/bash
+# {{ ansible_managed }}
+## restore script for icinga2
+
+set -e
+set -x
+
+BACKUP_FILE="${1}"
+
+if [ -z "${BACKUP_FILE}" ]
+then
+  echo "missing backup file"
+  exit 1
+fi
+
+CONFIG="/usr/local/etc/backup.config"
+
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+umask 022
+
+if [[ -f ${CONFIG} ]]
+then
+  . ${CONFIG}
+else
+  backup_base_directory=/usr/local/backup/icinga2
+  backup_dirs="
+    /etc/icinga2 \
+    /var/lib/icinga2"
+fi
+
+sha512sum --check "${BACKUP_FILE}.sha512"
+
+systemctl stop icinga2
+
+tar \
+  --extract \
+  --bzip2 \
+  --file \
+  ${BACKUP_FILE} \
+  --directory=/
+
+## icingaweb2 backend
+#mysql < $tmpdir/var/_backup/mysqldumpall.sql
+
+#{% if icinga2_chart_module is defined and icinga2_chart_module == 'graphite' %}
+#dirs="$dirs /etc/graphite /var/lib/graphite"
+#{% endif %}
+
+# for d in ${backup_dirs}
+# do
+#   rsync \
+#     --recursive \
+#     --links \
+#     --verbose \
+#     "${tmpdir}/${d}" \
+#     "${d}"
+# done
+
+icinga2 daemon -C
+
+echo "Please make sure that the database has also been successfully restored!"
+
+systemctl start icinga2

@@ -1,0 +1,209 @@
+---
+
+#- name: get icinga2 facts
+#  ansible.builtin.include_tasks: facts.yml
+#  tags:
+#    - icinga2_configure
+
+- name: create icinga2 constants.conf
+  ansible.builtin.template:
+    src: etc/icinga2/constants.conf.j2
+    dest: /etc/icinga2/constants.conf
+    owner: "{{ icinga2_user }}"
+    group: "{{ icinga2_group }}"
+    mode: 0666
+  tags:
+    - icinga2_configure
+  notify:
+    - check configuration
+    - restart icinga2
+
+- name: ensure right permissions for icinga2 pki dir
+  ansible.builtin.file:
+    dest: "{{ icinga2_pki_dir }}"
+    state: directory
+    mode: 0755
+    owner: "{{ icinga2_user }}"
+    group: "{{ icinga2_group }}"
+  tags:
+    - icinga2_configure
+
+- name: configure zones
+  ansible.builtin.template:
+    src: etc/icinga2/zones.conf.j2
+    dest: /etc/icinga2/zones.conf
+    owner: "{{ icinga2_user }}"
+    group: "{{ icinga2_group }}"
+    mode: 0666
+    backup: true
+  tags:
+    - icinga2_configure
+    - icinga2_configure_zones
+
+- name: create directory for primary zone
+  ansible.builtin.file:
+    path: /etc/icinga2/zones.d/primary
+    state: directory
+    owner: "{{ icinga2_user }}"
+    group: "{{ icinga2_group }}"
+    mode: 0755
+  tags:
+    - icinga2_configure
+    - icinga2_configure_zones
+  when:
+    - icinga2_primary_master is defined
+    - icinga2_primary_master == ansible_fqdn
+
+# only on primary master!
+- name: create {{ ansible_fqdn }}.conf for zones.d
+  ansible.builtin.template:
+    src: etc/icinga2/zones.d/primary.conf.j2
+    dest: /etc/icinga2/zones.d/primary/{{ ansible_fqdn }}.conf
+    owner: "{{ icinga2_user }}"
+    group: "{{ icinga2_group }}"
+    mode: 0666
+    backup: true
+  notify:
+    - check configuration
+    - restart icinga2
+  tags:
+    - icinga2_configure
+    - icinga2_configure_zones
+  when:
+    - icinga2_primary_master is defined
+    - icinga2_primary_master == ansible_fqdn
+
+- name: create groups.conf
+  ansible.builtin.template:
+    src: etc/icinga2/groups.conf.j2
+    dest: /etc/icinga2/groups.conf
+    owner: "{{ icinga2_user }}"
+    group: "{{ icinga2_group }}"
+    mode: 0666
+    backup: true
+  notify:
+    - check configuration
+    - restart icinga2
+  tags:
+    - icinga2_configure
+  when:
+    - icinga2_primary_master is defined
+    - icinga2_primary_master == ansible_fqdn
+
+- name: create '{{ icinga2_local_scriptsdir }}' directory
+  ansible.builtin.file:
+    path: "{{ icinga2_local_scriptsdir }}"
+    state: directory
+    owner: "{{ icinga2_user }}"
+    group: "{{ icinga2_group }}"
+    mode: 0755
+  tags:
+    - icinga2_configure
+
+- name: master pki
+  ansible.builtin.include_tasks: master/pki.yml
+  tags:
+    - icinga2_configure
+    - icinga2_configure_pki
+  when:
+    - icinga2_primary_master is defined
+    - icinga2_primary_master == ansible_fqdn
+
+- name: master configure
+  ansible.builtin.include_tasks: master/configure.yml
+  tags:
+    - icinga2_configure
+
+- name: master features
+  ansible.builtin.include_tasks: master/features.yml
+  tags:
+    - icinga2_configure
+    - icinga2_configure_features
+
+- name: master global-templates
+  ansible.builtin.include_tasks: master/global-templates.yml
+  tags:
+    - icinga2_configure
+  when:
+    - icinga2_primary_master is defined
+    - icinga2_primary_master == ansible_fqdn
+
+- name: validate master restart
+  tags:
+    - icinga2_configure
+  when:
+    - icinga2_primary_master is defined
+    - icinga2_primary_master == ansible_fqdn
+  block:
+    - name: validate icinga2 configuration
+      icinga2_daemon:
+        parameters:
+          - --validate
+          - --log-level debug
+          - --config /etc/icinga2/icinga2.conf
+      register: icinga2_validate_config
+
+    - name: validated config
+      ansible.builtin.debug:
+        var: icinga2_validate_config
+      when:
+        - icinga2_validate_config is defined
+        - icinga2_validate_config.failed is defined
+        - not icinga2_validate_config
+
+    - name: flush handlers
+      ansible.builtin.meta: flush_handlers
+
+    # TODO
+    # check if *restart* realy needed!
+    # - name: reload icinga2 master config
+    #   ansible.builtin.service:
+    #     name: icinga2
+    #     state: restarted
+    #   register: _restart_icinga2_master
+
+    - name: get state from primary master
+      tags:
+        - icinga2_configure
+      when:
+        - icinga2_validate_restart is defined
+        - icinga2_validate_restart
+      block:
+        # TODO wenn icinga2_primary_master nicht per DNS auflösbar ist, gibt es hier einen timeout
+        - name: wait for primary master ({{ icinga2_primary_master }}:{{ icinga2_master_port | default(5665) }}) to startup
+          delegate_to: "{{ icinga2_primary_master }}"
+          ansible.builtin.wait_for:
+            host: "{{ icinga2_primary_master }}"
+            port: "{{ icinga2_master_port | default(5665) }}"
+            delay: 2
+            connect_timeout: 120
+
+        - name: get state of primary master '{{ icinga2_primary_master }}'
+          delegate_to: "{{ icinga2_primary_master }}"
+          ansible.builtin.uri:
+            url: "https://{{ icinga2_primary_master }}:{{ icinga2_master_port | default(5665) }}/v1/status/IcingaApplication"
+            url_username: validate
+            url_password: "{{ icinga2_api.user['validate'].password }}"
+            validate_certs: false
+            method: GET
+            return_content: true
+            status_code:
+              - 200  # OK
+              - 301
+              - 302
+              - 401  # Unauthorized
+          register: icinga2_api_test
+          until: icinga2_api_test is succeeded
+          retries: 5
+          delay: 2
+
+
+- name: master secondary
+  ansible.builtin.include_tasks: master/secondary.yml
+  tags:
+    - icinga2_configure
+  when:
+    - icinga2_primary_master is defined
+    - not icinga2_primary_master == ansible_fqdn
+
+...
