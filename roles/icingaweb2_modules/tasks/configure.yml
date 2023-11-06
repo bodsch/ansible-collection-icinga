@@ -1,0 +1,57 @@
+---
+
+- name: create directory for module configuration
+  become: true
+  ansible.builtin.file:
+    path: /etc/icingaweb2/modules/{{ item.key }}
+    state: directory
+    recurse: true
+    owner: "{{ icingaweb_user }}"
+    group: "{{ icingaweb_group }}"
+    mode: 0755
+  loop:
+    "{{ icingaweb_modules | dict2items }}"
+  loop_control:
+    label: "theme: {{ item.key }}"
+  when:
+    - item.value.enabled is defined
+    - item.value.enabled
+    - item.value.configuration is defined
+    - item.value.configuration | count > 0
+
+- name: configure module
+  become: true
+  ansible.builtin.template:
+    src: modules/{{ item.key }}/config.ini.j2
+    dest: /etc/icingaweb2/modules/{{ item.key }}/config.ini
+    owner: "{{ icingaweb_user }}"
+    group: "{{ icingaweb_group }}"
+    mode: 0666
+  loop:
+    "{{ icingaweb_modules | dict2items }}"
+  loop_control:
+    label: "theme: {{ item.key }}"
+  when:
+    - item.value.enabled is defined
+    - item.value.enabled
+    - item.value.configuration is defined
+    - item.value.configuration | count > 0
+
+- name: extract module information for grafana
+  ansible.builtin.set_fact:
+    _icingaweb_module_grafana: "{{ icingaweb_modules | bodsch.icinga.dict_from_list('grafana') }}"
+
+- name: create grafanas graphs.ini
+  become: true
+  ansible.builtin.template:
+    src: modules/grafana/graphs.ini.j2
+    dest: /etc/icingaweb2/modules/grafana/graphs.ini
+    owner: "{{ icingaweb_user }}"
+    group: "{{ icingaweb_group }}"
+    mode: 0666
+  when:
+    - _icingaweb_module_grafana is defined
+    - _icingaweb_module_grafana.enabled | default('false')
+    - _icingaweb_module_grafana.graphs | default({}) | count > 0
+
+...

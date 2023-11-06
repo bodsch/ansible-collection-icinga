@@ -1,0 +1,116 @@
+---
+
+- name: create module archive on ansible controller
+  become: false
+  delegate_to: localhost
+  community.general.archive:
+    path: "{{ icingaweb_modules_local_tmp_directory }}/{{ item.key }}"
+    dest: "{{ icingaweb_modules_local_tmp_directory }}/{{ item.key }}.zip"
+    mode: 0660
+    remove: false
+    format: zip
+    exclude_path:
+      - "{{ icingaweb_modules_local_tmp_directory }}/{{ item.key }}/.git*"
+    exclusion_patterns:
+      - "{{ icingaweb_modules_local_tmp_directory }}/{{ item.key }}/.git*"
+  loop:
+    "{{ icingaweb_modules | dict2items }}"
+  loop_control:
+    label: "module: {{ item.key }}"
+  when:
+    - item.value['download'] | default('false') | bool
+
+- name: define checksums from archive
+  become: false
+  delegate_to: localhost
+  ansible.builtin.stat:
+    path: "{{ icingaweb_modules_local_tmp_directory }}/{{ item.key }}.zip"
+    checksum_algorithm: sha256
+  register: _module_checksum
+  loop:
+    "{{ icingaweb_modules | dict2items }}"
+  loop_control:
+    label: "module: {{ item.key }}"
+
+- name: append checksums to icingaweb_modules
+  ansible.builtin.set_fact:
+    icingaweb_modules: "{{ icingaweb_modules | bodsch.icinga.append_checksum(_module_checksum) }}"
+
+- name: update facts
+  ansible.builtin.setup:
+
+- name: propagate modules archives
+  become: true
+  ansible.builtin.copy:
+    src: "{{ icingaweb_modules_local_tmp_directory }}/{{ item.key }}.zip"
+    dest: "{{ icingaweb_modules_remote_tmp_directory }}/"
+    mode: 0660
+  loop:
+    "{{ icingaweb_modules | dict2items }}"
+  loop_control:
+    label: "module: {{ item.key }}"
+  when:
+    - item.value['download'] | default('false') | bool
+
+- name: extract module archives
+  ansible.builtin.unarchive:
+    src: "{{ icingaweb_modules_remote_tmp_directory }}/{{ item.key }}.zip"
+    dest: "{{ icingaweb_modules_install_dir }}/modules/"
+    owner: "{{ icingaweb_user }}"
+    group: "{{ icingaweb_group }}"
+    mode: 0755
+    remote_src: true
+  loop:
+    "{{ icingaweb_modules | dict2items }}"
+  loop_control:
+    label: "module: {{ item.key }}"
+  register: _extract_archive
+  when:
+    - item.value['download'] | default('false') | bool
+
+- name: fix rights for modules
+  become: true
+  ansible.builtin.file:
+    path: "{{ icingaweb_modules_install_dir }}/modules/{{ item.key }}"
+    owner: "{{ icingaweb_user }}"
+    group: "{{ icingaweb_group }}"
+    mode: 0755
+    recurse: true
+  loop:
+    "{{ icingaweb_modules | dict2items }}"
+  loop_control:
+    label: "module: {{ item.key }}"
+  when:
+    - _extract_archive is defined
+    - _extract_archive.changed
+
+- name: create module checksum
+  ansible.builtin.copy:
+    dest: "{{ icingaweb_modules_install_dir }}/modules/{{ item.key }}/.checksum"
+    content: "{{ item.value.checksum | default('-') }}"
+    owner: "{{ icingaweb_user }}"
+    group: "{{ icingaweb_group }}"
+    mode: 0640
+  loop:
+    "{{ icingaweb_modules | dict2items }}"
+  loop_control:
+    label: "module: {{ item.key }}"
+
+- name: enable / disable modules
+  become: true
+  icingacli:
+    state: "{{ 'enable' if item.enabled | default('true') else 'disable' }}"
+    command: module
+    module_name: "{{ item.key }}"
+  loop:
+    "{{ icingaweb_modules | dict2items }}"
+  loop_control:
+    label: "module: {{ item.key }} - enabled: {{ item.value.enabled | default('False', true) }}"
+
+- name: create custom fact file
+  bodsch.core.facts:
+    name: icingaweb2_modules
+    facts:
+      modules: "{{ icingaweb_modules | bodsch.icinga.installed_modules }}"
+
+...

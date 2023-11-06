@@ -38,7 +38,17 @@ class FilterModule(object):
     def append_checksum(self, data, checksums):
         """
         """
+        display.v(f"append_checksum({data}, {checksums})")
+
         for c in checksums.get("results"):
+
+            display.v(f"  - {c})")
+
+            exists = c.get("stat", {}).get("exists", False)
+
+            if not exists:
+                continue
+
             path = c.get("stat", {}).get("path", None)
             checksum = c.get("stat", {}).get("checksum", None)
 
