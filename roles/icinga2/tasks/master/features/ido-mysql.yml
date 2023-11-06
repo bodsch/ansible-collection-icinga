@@ -24,9 +24,9 @@
 
     - name: install docker python packages  # noqa no-handler
       ansible.builtin.pip:
-        executable: pip3
         requirements: "{{ pip_requirements.requirements_file }}"
         state: present
+        extra_args: "{{ icinga2_python_extra_args | default([]) | bodsch.core.python_extra_args(python_version=ansible_python.version) | default(omit) }}"
       register: pip_install
       ignore_errors: true
       no_log: true
@@ -50,7 +50,7 @@
           ansible.builtin.pip:
             requirements: "{{ pip_requirements.requirements_file }}"
             state: present
-            executable: pip3
+            extra_args: "{{ icinga2_python_extra_args | default([]) | bodsch.core.python_extra_args(python_version=ansible_python.version) | default(omit) }}"
 
         - name: uninstall build essentials
           ansible.builtin.package:
