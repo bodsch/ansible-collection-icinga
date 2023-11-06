@@ -1,0 +1,47 @@
+---
+
+- name: download external themes to ansible controller
+  become: false
+  delegate_to: localhost
+  ansible.builtin.git:
+    depth: 1 # copy the least bit of history possible to get that repo.
+    repo: "{{ item.value.src }}"
+    version: "{{ item.value.version | default('') }}"
+    dest: "{{ icingaweb_themes_local_tmp_directory }}/{{ item.key }}"
+    update: true
+  loop:
+    "{{ icingaweb_themes | dict2items }}"
+  loop_control:
+    label: "theme: {{ item.key }} - version: {{ item.value.version | default('', true) }} - download: {{ item.value['download'] | default('true') | bool }} "
+  when:
+    - item.value['download'] | default('true') | bool
+
+- name: ensure image directory are present
+  become: false
+  delegate_to: localhost
+  ansible.builtin.file:
+    state: directory
+    mode: 0750
+    path: "{{ icingaweb_themes_local_tmp_directory }}/{{ item.key }}/public/img"
+  loop:
+    "{{ icingaweb_themes | dict2items }}"
+  loop_control:
+    label: "theme: {{ item.key }}"
+  when:
+    - item.value.images is defined
+    - item.value.images | count > 0
+
+- name: download external images for theme to ansible controller
+  ansible.builtin.include_tasks: download_images.yml
+  loop:
+    "{{ icingaweb_themes | dict2items }}"
+  loop_control:
+    index_var: index
+    loop_var: theme
+    label: "theme: {{ theme.key }}"
+  when:
+    - theme.value.images is defined
+    - theme.value.images | count > 0
+    - theme.value['download'] | default('true') | bool
+
+...

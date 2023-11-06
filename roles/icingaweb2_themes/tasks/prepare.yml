@@ -1,0 +1,82 @@
+---
+
+- name: include OS specific configuration
+  ansible.builtin.include_vars: "{{ lookup('first_found', params) }}"
+  vars:
+    params:
+      paths:
+        - "vars"
+      files:
+        # eg. debian-10 / ubuntu-20 / centos-8 / oraclelinux-8
+        - "{{ ansible_distribution | lower }}-{{ ansible_distribution_major_version }}.yml"
+        # eg. archlinux-systemd / archlinux-openrc
+        - "{{ ansible_distribution | lower }}-{{ ansible_service_mgr | lower }}.yml"
+        # eg. debian / ubuntu / centos / oraclelinux
+        - "{{ ansible_distribution | lower }}.yml"
+        # eg. redhat / debian
+        - "{{ ansible_os_family | lower }}.yml"
+        - default.yaml
+      skip: true
+
+- name: create local temp directory
+  become: false
+  delegate_to: localhost
+  ansible.builtin.file:
+    path: "{{ icingaweb_themes_local_tmp_directory }}"
+    state: directory
+    mode: 0700
+
+- name: create remote temp directory
+  ansible.builtin.file:
+    path: "{{ icingaweb_themes_remote_tmp_directory }}"
+    state: directory
+    mode: 0700
+
+- name: handle icingaweb group
+  when:
+    - not icingaweb_group is defined or icingaweb_group | length > 0
+  block:
+    - name: "find primary group for user '{{ icingaweb_user }}'"
+      become: true
+      ansible.builtin.getent:
+        database: group
+        key: "{{ icingaweb_user }}"
+        split: ':'
+
+    - name: "set icingaweb_group '{{ getent_group | list | first }}'"
+      ansible.builtin.set_fact:
+        icingaweb_group: "{{ getent_group | list | first }}"
+      when:
+        - getent_group is defined
+
+- name: get local fact for themes
+  ansible.builtin.set_fact:
+    local_icingaweb2_themes: "{{ ansible_local.icingaweb2_themes.themes }}"
+  when:
+    - ansible_local.icingaweb2_themes is defined
+    - ansible_local.icingaweb2_themes.themes is defined
+    - ansible_local.icingaweb2_themes.themes | length != 0
+
+- name: detect changed themes
+  icingaweb_themes:
+    state: verify
+    install_directory: "{{ icingaweb_themes_install_dir }}/modules"
+    themes: "{{ icingaweb_themes }}"
+    checksums: "{{ local_icingaweb2_themes | default({}) }}"
+  when:
+    - icingaweb_themes is defined
+    - icingaweb_themes | count > 0
+    - icingaweb_themes | bodsch.core.type == "dict"
+  register: changed_icingaweb_themes
+
+- name: re-define icingaweb_themes
+  ansible.builtin.set_fact:
+    icingaweb_themes: "{{ changed_icingaweb_themes.themes }}"
+  when:
+    - changed_icingaweb_themes.themes is defined
+    - changed_icingaweb_themes.changed
+
+- name: re-read setup
+  ansible.builtin.setup:
+
+...

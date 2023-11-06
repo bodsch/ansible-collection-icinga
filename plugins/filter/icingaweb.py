@@ -20,17 +20,17 @@ class FilterModule(object):
 
     def filters(self):
         return {
-            'type': self.var_type,
+            # 'type': self.var_type,
             'create_password_hash': self.password_hash,
             'dict_from_list': self.dict_from_list,
             'module_version': self.module_version,
         }
 
-    def var_type(self, var):
-        """
-          Get the type of a variable
-        """
-        return type(var).__name__
+    # def var_type(self, var):
+    #     """
+    #       Get the type of a variable
+    #     """
+    #     return type(var).__name__
 
     def password_hash(self, data):
         """
@@ -64,11 +64,14 @@ class FilterModule(object):
     def dict_from_list(self, data, search):
         """
         """
-        display.v("dict_from_list({}, {})".format(data, search))
+        display.v(f"dict_from_list({data}, {search})")
 
-        result = next((item for item in data if item.get('name') == search), {})
+        if(isinstance(data, dict)):
+            result = data.get(search, {})
+        else:
+            result = next((item for item in data if item.get('name') == search), {})
 
-        display.v("result : {}".format(result))
+        display.v(f"result : {result}")
 
         return result
 

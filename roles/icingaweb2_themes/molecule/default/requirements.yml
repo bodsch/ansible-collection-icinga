@@ -1,0 +1,35 @@
+---
+
+- name: snapd
+  src: https://github.com/bodsch/ansible-snapd
+  version: 1.2.2
+
+- name: apparmor
+  src: https://github.com/bodsch/ansible-apparmor
+  version: 2.0.0
+
+- name: php-fpm
+  src: https://github.com/bodsch/ansible-php
+  version: 2.2.0
+
+- name: nginx
+  src: https://github.com/bodsch/ansible-nginx
+  version: 0.25.0
+
+- name: monitoring-tools
+  src: https://github.com/bodsch/ansible-monitoring-plugins
+  version: 1.4.2
+
+- name: mariadb
+  src: https://github.com/bodsch/ansible-mariadb
+  version: 2.4.1
+
+# - name: icinga2
+#   src: bodsch.icinga2
+#   version: 1.9.0
+#
+# - name: icingaweb
+#   src: bodsch.icingaweb2
+#   version: 1.10.2
+
+...

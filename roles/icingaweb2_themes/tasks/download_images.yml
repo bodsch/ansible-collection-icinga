@@ -1,0 +1,22 @@
+---
+
+- name: download external images for themes to ansible controller
+  become: false
+  delegate_to: localhost
+  ansible.builtin.get_url:
+    url: "{{ item.url }}"
+    dest: "{{ icingaweb_themes_local_tmp_directory }}/{{ theme.key }}/public/img/{{ item.name }}"
+    mode: 0660
+  register: _download_artefact
+  until: _download_artefact is succeeded
+  retries: 5
+  delay: 2
+  check_mode: false
+  loop: "{{ theme.value.images }}"
+  loop_control:
+    label: "theme: {{ theme.key }} - image: {{ item.name | default('', true) }}"
+  when:
+    - theme.value.images is defined
+    - theme.value.images | count > 0
+
+...

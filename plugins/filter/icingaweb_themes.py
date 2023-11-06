@@ -16,7 +16,7 @@ class FilterModule(object):
 
     def filters(self):
         return {
-            'dict_from_list': self.dict_from_list,
+            # 'dict_from_list': self.dict_from_list,
             'append_checksum': self.append_checksum,
             'installed_themes': self.installed_themes,
         }
