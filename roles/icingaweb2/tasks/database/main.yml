@@ -1,0 +1,12 @@
+---
+
+- name: install and configure database
+  ansible.builtin.include_tasks: database/mysql.yml
+
+- name: create database users
+  ansible.builtin.include_tasks: database/users.yml
+
+- name: create configure groups
+  ansible.builtin.include_tasks: database/groups.yml
+
+...

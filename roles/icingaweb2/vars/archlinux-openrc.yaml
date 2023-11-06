@@ -1,0 +1,14 @@
+---
+
+icingaweb_packages:
+  - python-mysqlclient
+  - mariadb-clients
+  - mariadb-libs
+  - iproute2
+  - unzip
+  - python-pip
+
+icingaweb_user: http
+icingaweb_group: http
+
+...

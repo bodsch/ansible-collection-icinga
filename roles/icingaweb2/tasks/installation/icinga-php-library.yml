@@ -1,0 +1,57 @@
+---
+
+- name: define icinga php library version
+  ansible.builtin.set_fact:
+    icingaweb_php_library: "{{ icingaweb_web_modules | bodsch.icinga.module_version('icinga-php-library') }}"
+
+- name: detect installed icinga php library version {{ icingaweb_php_library }}
+  ansible.builtin.stat:
+    path: /usr/share/icinga-php/icinga-php-library-{{ icingaweb_php_library }}/vendor/autoload.php
+    get_checksum: false
+    get_md5: false
+    get_attributes: false
+  register: stat_installed_ipl
+
+- name: download and install icinga-php-library {{ icingaweb_php_library }}
+  when:
+    - stat_installed_ipl is defined
+    - stat_installed_ipl.stat is defined
+    - not stat_installed_ipl.stat.exists
+  block:
+    - name: download icinga-php-library v{{ icingaweb_php_library }}.tar.gz
+      delegate_to: localhost
+      become: false
+      ansible.builtin.get_url:
+        url: https://github.com/Icinga/icinga-php-library/archive/v{{ icingaweb_php_library }}.tar.gz
+        dest: "{{ icingaweb_local_tmp_directory }}/icinga-php-library-v{{ icingaweb_php_library }}.tar.gz"
+        mode: 0660
+      register: _download_artefact
+      until: _download_artefact is succeeded
+      retries: 5
+      delay: 2
+      check_mode: false
+
+    - name: deploy library archives
+      ansible.builtin.copy:
+        src: "{{ icingaweb_local_tmp_directory }}/icinga-php-library-v{{ icingaweb_php_library }}.tar.gz"
+        dest: /tmp
+        mode: 0644
+
+    - name: extract library archives
+      ansible.builtin.unarchive:
+        src: "/tmp/icinga-php-library-v{{ icingaweb_php_library }}.tar.gz"
+        dest: /usr/share/icinga-php/
+        owner: "{{ icingaweb_user }}"
+        group: "{{ icingaweb_group }}"
+        mode: 0755
+        remote_src: true
+
+- name: create link from icinga-php-library to ipl
+  ansible.builtin.file:
+    src: "/usr/share/icinga-php/icinga-php-library-{{ icingaweb_php_library }}"
+    dest: "/usr/share/icinga-php/ipl"
+    owner: "{{ icingaweb_user }}"
+    group: "{{ icingaweb_group }}"
+    mode: 0755
+    state: link
+    force: true

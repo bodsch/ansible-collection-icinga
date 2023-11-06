@@ -1,0 +1,7 @@
+{% if icingaweb_auth_backend is defined and
+      icingaweb_auth_backend.database is defined and
+      icingaweb_auth_backend.database.dbname is defined %}
+USE {{ icingaweb_auth_backend.database.dbname }};
+
+replace INTO icingaweb_dbversion (name, version, modify_time) VALUES ('icingaweb', '{{ icingaweb_version }}', now());
+{% endif %}

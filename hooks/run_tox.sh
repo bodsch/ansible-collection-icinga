@@ -2,7 +2,7 @@
 
 . hooks/molecule.rc
 
-set -x
+# set -x
 set -e
 
 TOX_TEST="${1}"

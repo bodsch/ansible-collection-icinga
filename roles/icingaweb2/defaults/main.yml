@@ -1,0 +1,118 @@
+---
+
+icingaweb_version: 2.11.3
+
+icingaweb_web_modules:
+  - name: icinga-php-library
+    version: 0.10.0
+  - name: icinga-php-thirdparty
+    version: 0.11.0
+
+icingaweb_install_dir: /usr/share/icingaweb2
+
+icingaweb_php_daemon:
+  restart: true
+  name: "{{ php_fpm_daemon }}"
+
+icingaweb_modules_disabled:
+  - setup
+
+icingaweb_modules_enabled: []
+#  - monitoring
+
+# Use one of DEBUG, INFO, WARNING, ERROR.
+icingaweb_log_level: INFO
+
+icingaweb_themes: []
+
+# if users should not be allowed to change their theme
+icingaweb_themes_disabled: true
+
+# Can be set to 'Icinga', 'high-contrast', 'Winter', ‘colorblind’ or your own installed theme
+icingaweb_themes_default: Icinga
+
+icingaweb_external_modules: []
+
+icingaweb_preferences_store: db
+
+# /etc/icingaweb2/config.ini
+# types are: 'ini' or 'db'
+# for type 'db' use the config_resource: 'icingaweb' (see below under 'icingaweb_groups')
+icingaweb_config_backend: db
+icingaweb_config_resource: icingaweb
+
+# /etc/icingaweb2/authentication.ini
+icingaweb_authentication: {}
+
+# /etc/icingaweb2/groups.ini
+icingaweb_groups: {}
+# DEFAULT (see icingaweb_groups_defaults in vars/main.yml):
+#   icingaweb:
+#     backend: db
+#     resource: icingaweb
+
+#   ldap_groups:
+#     backend: "ldpa" # msldap
+#     resource: "ldap"
+#     user_backend: "auth_ldap"
+#     base_dn: "dc=ldap,dc=icinga,dc=local"
+#     group_class: "*"
+#     group_name_attribute: "gid"
+#     group_member_attribute: "memberUid"
+
+icingaweb_resources:
+  icingaweb:
+    type: db
+    db: mysql
+    host: 127.0.0.1
+    port: 3306
+    # dbname: "{{ icingaweb_auth_dba_database }}"
+    # username: "{{ icingaweb_auth_dba_username }}"
+    # password: "{{ icingaweb_auth_dba_password }}"
+    prefix: icingaweb_
+    charset: utf8
+
+icingaweb_auth_backend:
+  database:
+    host: 127.0.0.1
+    port: 3306
+    dbname: "{{ icingaweb_auth_dba_database }}"
+    username: "{{ icingaweb_auth_dba_username }}"
+    password: "{{ icingaweb_auth_dba_password }}"
+
+icingaweb_db_users: []
+
+icingaweb_db_groups: []
+
+icingaweb_roles:
+  - name: 'local admins'
+    users:
+      - admin
+    permissions: '*'
+
+# API connection
+icingaweb_commandtransport:
+  icinga2:
+    transport: api
+    host: localhost
+    port: 5665
+    username: root
+    password: icinga2
+
+icingaweb_dependencies:
+  - jq
+
+icingaweb_icingadb:
+  module:
+    enabled: true
+    src: https://github.com/Icinga/icingadb-web
+    version: v1.0.2
+
+icingaweb_module:
+  monitoring:
+    security:
+      protected_customvars:
+        - '*http_auth_pair*'
+        - '*password*'
+
+...

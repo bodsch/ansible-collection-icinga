@@ -1,0 +1,18 @@
+---
+
+icingaweb_packages:
+  - python-mysqlclient
+  - mariadb-clients
+  - mariadb-libs
+  - iproute2
+  - unzip
+  - python-pip
+
+icingaweb_user: http
+icingaweb_group: http
+
+_icingaweb_package_mariadb_clients: mariadb-clients
+
+php_fpm_daemon: php-fpm{{ php_major_version if php_major_version == '7' else '' }}
+
+...
