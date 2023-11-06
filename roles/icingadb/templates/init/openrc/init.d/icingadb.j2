@@ -1,0 +1,38 @@
+#!/usr/bin/openrc-run
+# Copyright 1999-2017 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+
+depend() {
+  need net
+  after network
+  after redis
+}
+
+start() {
+  ebegin "Starting icingadb"
+
+  start-stop-daemon \
+    --start \
+    --background \
+    --make-pidfile \
+    --stdout /var/log/icingadb/icingadb.log \
+    --stderr /var/log/icingadb/icingadb.log \
+    --pidfile /run/icingadb.pid \
+    --user ${ICINGADB_USER}:${ICINGADB_GROUP} \
+    --exec /usr/sbin/icingadb -- \
+    --config /etc/icingadb/config.yml
+
+  eend $?
+}
+
+stop() {
+  ebegin "Stopping icingadb"
+
+  start-stop-daemon \
+    --stop \
+    --pidfile /run/icingadb.pid \
+    --user "${ICINGADB_USER}" \
+    --retry "SIGTERM/15 SIGKILL/30"
+
+  eend $?
+}

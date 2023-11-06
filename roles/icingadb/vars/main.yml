@@ -1,0 +1,50 @@
+---
+
+icingadb_local_tmp_directory: /tmp/ansible/icingadb
+
+icingadb_dependencies: []
+
+icingadb_packages:
+  - icingadb
+
+icingadb_installed: false
+icingadb_install_dir: /usr/share/icingadb
+
+icingadb_defaults_database:
+  host: 127.0.0.1
+  port: 3306
+  database: icingadb
+  user: icingadb
+  password: icingadb
+
+icingadb_defaults_redis:
+  host: 127.0.0.1
+  port: 6379
+
+icingadb_defaults_logging:
+  level: info
+  output: ''
+  interval: "20s"
+  options:
+    database: fatal
+    redis: fatal
+    heartbeat: fatal
+    high_availability: fatal
+    config_sync: fatal
+    history_sync: fatal
+    runtime_updates: fatal
+    overdue_sync: fatal
+    dump_signals: fatal
+
+icingadb_defaults_retention:
+  history_days: ""
+  sla_days: ""
+  options:
+    acknowledgement: ""
+    comment: ""
+    downtime: ""
+    flapping: ""
+    notification: ""
+    state: ""
+
+...

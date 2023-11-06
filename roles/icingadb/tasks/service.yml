@@ -1,0 +1,13 @@
+---
+
+- name: enable icingadb services
+  ansible.builtin.service:
+    name: icingadb
+    enabled: true
+
+- name: ensure icingadb are started
+  ansible.builtin.service:
+    name: icingadb
+    state: started
+
+...

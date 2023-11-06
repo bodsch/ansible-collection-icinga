@@ -1,0 +1,13 @@
+---
+
+icingadb_user: icingadb
+icingadb_group: icingadb
+
+icingadb_database: {}
+icingadb_redis: {}
+icingadb_logging: {}
+icingadb_retention: {}
+
+icingadb_repo_archlinux: https://github.com/bodsch/aur-icingadb.git
+
+...

@@ -1,0 +1,14 @@
+---
+
+icingadb_dependencies:
+  - python-pymysql
+  - mariadb-clients
+  - mariadb-libs
+  - iproute2
+
+icingadb_aur_dependencies:
+  - base-devel
+  - fakeroot
+  - git
+
+...

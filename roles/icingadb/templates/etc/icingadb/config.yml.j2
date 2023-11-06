@@ -1,0 +1,114 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+{% set _valid_loglevel = ['fatal', 'error', 'warn', 'info', 'debug'] %}
+---
+# {{ ansible_managed }}
+
+database:
+  host: {{ icingadb_database.host }}
+  port: {{ icingadb_database.port }}
+  database: {{ icingadb_database.database }}
+  user: {{ icingadb_database.user }}
+  password: {{ icingadb_database.password }}
+
+redis:
+  host: {{ icingadb_redis.host }}
+  port: {{ icingadb_redis.port | default('6379') }}
+
+logging:
+{% if icingadb_logging.level in _valid_loglevel %}
+  level: {{ icingadb_logging.level }}
+{% else %}
+  level: info
+{% endif %}
+{% if icingadb_logging.output is defined and
+      icingadb_logging.output in ['console', 'systemd-journald'] %}
+  output: {{ icingadb_logging.output }}
+{% endif %}
+{% if icingadb_logging.interval is defined and
+      icingadb_logging.interval | length > 0 %}
+  interval: {{ icingadb_logging.interval }}
+{% endif %}
+
+  # Map of component-logging level pairs to define a different log level than the default value for each component.
+{% if icingadb_logging.options is defined and
+      icingadb_logging.options | length > 0 %}
+  options:
+  {% if icingadb_logging.options.config_sync is defined and
+        icingadb_logging.options.config_sync in _valid_loglevel %}
+    config-sync: {{ icingadb_logging.options.config_sync }}
+  {% endif %}
+  {% if icingadb_logging.options.database is defined and
+        icingadb_logging.options.database in _valid_loglevel %}
+    database: {{ icingadb_logging.options.database }}
+  {% endif %}
+  {% if icingadb_logging.options.dump_signals is defined and
+        icingadb_logging.options.dump_signals in _valid_loglevel %}
+    dump-signals: {{ icingadb_logging.options.dump_signals }}
+  {% endif %}
+  {% if icingadb_logging.options.heartbeat is defined and
+        icingadb_logging.options.heartbeat in _valid_loglevel %}
+    heartbeat: {{ icingadb_logging.options.heartbeat }}
+  {% endif %}
+  {% if icingadb_logging.options.high_availability is defined and
+        icingadb_logging.options.high_availability in _valid_loglevel %}
+    high-availability: {{ icingadb_logging.options.high_availability }}
+  {% endif %}
+  {% if icingadb_logging.options.history_sync is defined and
+        icingadb_logging.options.history_sync in _valid_loglevel %}
+    history-sync: {{ icingadb_logging.options.history_sync }}
+  {% endif %}
+  {% if icingadb_logging.options.overdue_sync is defined and
+        icingadb_logging.options.overdue_sync in _valid_loglevel %}
+    overdue-sync: {{ icingadb_logging.options.overdue_sync }}
+  {% endif %}
+  {% if icingadb_logging.options.redis is defined and
+        icingadb_logging.options.redis in _valid_loglevel %}
+    redis: {{ icingadb_logging.options.redis }}
+  {% endif %}
+  {% if icingadb_logging.options.retention is defined and
+        icingadb_logging.options.retention in _valid_loglevel %}
+    retention: {{ icingadb_logging.options.retention }}
+  {% endif %}
+  {% if icingadb_logging.options.runtime_updates is defined and
+        icingadb_logging.options.runtime_updates in _valid_loglevel %}
+    runtime-updates: {{ icingadb_logging.options.runtime_updates }}
+  {% endif %}
+{% endif %}
+
+retention:
+{% if icingadb_retention.history_days is defined and
+      icingadb_retention.history_days | default('0') | int > 0 %}
+  history-days: {{ icingadb_retention.history_days }}
+{% endif %}
+{% if icingadb_retention.sla_days is defined and
+      icingadb_retention.sla_days | default('0') | int > 0 %}
+  sla-days: {{ icingadb_retention.sla_days }}
+{% endif %}
+{% if icingadb_retention.options is defined and
+      icingadb_retention.options | count > 0 %}
+  options:
+  {% if icingadb_retention.options.acknowledgement is defined and
+        icingadb_retention.options.acknowledgement | default('0') | int > 0 %}
+    acknowledgement: {{ icingadb_retention.options.acknowledgement }}
+  {% endif %}
+  {% if icingadb_retention.options.comment is defined and
+        icingadb_retention.options.comment | default('0') | int > 0 %}
+    comment: {{ icingadb_retention.options.comment }}
+  {% endif %}
+  {% if icingadb_retention.options.downtime is defined and
+        icingadb_retention.options.downtime | default('0') | int > 0 %}
+    downtime: {{ icingadb_retention.options.downtime }}
+  {% endif %}
+  {% if icingadb_retention.options.flapping is defined and
+        icingadb_retention.options.flapping | default('0') | int > 0 %}
+    flapping: {{ icingadb_retention.options.flapping }}
+  {% endif %}
+  {% if icingadb_retention.options.notification is defined and
+        icingadb_retention.options.notification | default('0') | int > 0 %}
+    notification: {{ icingadb_retention.options.notification }}
+  {% endif %}
+  {% if icingadb_retention.options.state is defined and
+        icingadb_retention.options.state | default('0') | int > 0 %}
+    state: {{ icingadb_retention.options.state }}
+  {% endif %}
+{% endif %}

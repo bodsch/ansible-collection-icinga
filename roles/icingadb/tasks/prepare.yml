@@ -1,0 +1,166 @@
+---
+
+- name: include OS specific configuration
+  ansible.builtin.include_vars: "{{ lookup('first_found', params) }}"
+  vars:
+    params:
+      paths:
+        - "vars"
+      files:
+        # eg. debian-10 / ubuntu-20 / centos-8 / oraclelinux-8
+        - "{{ ansible_distribution | lower }}-{{ ansible_distribution_major_version }}.yml"
+        # eg. archlinux-systemd / archlinux-openrc
+        - "{{ ansible_distribution | lower }}-{{ ansible_service_mgr | lower }}.yml"
+        # eg. artixlinux
+        - "{{ ansible_distribution | lower | replace(' ', '') }}.yml"
+        # eg. debian / ubuntu / centos / oraclelinux
+        - "{{ ansible_distribution | lower }}.yml"
+        # eg. redhat / debian
+        - "{{ ansible_os_family | lower }}.yml"
+        - default.yml
+      skip: true
+
+- name: python3-apt for debian
+  when:
+    - ansible_os_family | lower == 'debian'
+  block:
+    - name: make sure python3-apt is installed (only debian based)
+      ansible.builtin.package:
+        name:
+          - python3-apt
+        state: present
+      register: _installed
+
+    - name: update apt cache
+      when:
+        - _installed.changed
+      block:
+        - name: clean apt cache  # noqa command-instead-of-module
+          ansible.builtin.command: |
+            apt-get clean
+          register: apt_clean
+          changed_when: apt_clean.rc != 0
+          failed_when: apt_clean.rc != 0
+          when: "ansible_version.full is version_compare('2.13', '<')"
+
+        - name: clean apt cache
+          ansible.builtin.apt:
+            clean: true
+          when: "ansible_version.full is version_compare('2.13', '>=')"
+
+- name: install requirements
+  ansible.builtin.package:
+    name: "{{ icingadb_dependencies }}"
+    state: present
+
+# ----------------------------------------------------------------------------------
+# arch-linux based
+#
+- name: archlinux based
+  when:
+    - ansible_os_family | lower == 'archlinux' or
+      ansible_distribution | lower | replace(' ', '') == 'artixlinux'
+  block:
+    - name: install build tools
+      ansible.builtin.package:
+        name: "{{ icingadb_aur_dependencies }}"
+        state: present
+
+    - name: create sudo rules for aur_builder
+      ansible.builtin.copy:
+        content: '%aur_builder ALL=(ALL) NOPASSWD: ALL'
+        dest: /etc/sudoers.d/aur
+        mode: 0640
+        validate: visudo -cf %s
+
+    - name: create build group
+      ansible.builtin.group:
+        name: aur_builder
+
+    - name: create build user
+      ansible.builtin.user:
+        name: aur_builder
+        group: aur_builder
+
+    - name: import gpg key
+      become: true
+      become_user: aur_builder
+      ansible.builtin.command: |
+        gpg --recv-keys C6E319C334410682
+      register: gpg_import
+      changed_when: gpg_import.rc != 0
+      failed_when: gpg_import.rc != 0
+
+# debian based
+#
+- name: debian based
+  when:
+    - ansible_os_family | lower == 'debian'
+  block:
+    - name: add icinga GPG key
+      ansible.builtin.apt_key:
+        id: F51A91A5EE001AA5D77D53C4C6E319C334410682
+        url: https://packages.icinga.com/icinga.key
+
+    - name: add icingadb repo sources
+      ansible.builtin.template:
+        src: etc/apt/icingadb.list.j2
+        dest: /etc/apt/sources.list.d/icingadb.list
+        mode: 0644
+
+# redhat based
+#
+- name: redhat based
+  when:
+    - ansible_os_family | lower == 'redhat'
+  block:
+    - name: import EPEL GPG key
+      ansible.builtin.rpm_key:
+        key: https://archive.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-{{ ansible_distribution_major_version }}
+        state: present
+
+    - name: install EPEL repository
+      ansible.builtin.yum_repository:
+        name: epel
+        state: present
+        description: Extra Packages for Enterprise Linux {{ ansible_distribution_major_version }} - $basearch
+        baseurl: http://download.fedoraproject.org/pub/epel/{{ ansible_distribution_major_version }}/$basearch
+        gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-{{ ansible_distribution_major_version }}
+        metalink: https://mirrors.fedoraproject.org/metalink?repo=epel-{{ ansible_distribution_major_version }}&arch=$basearch&infra=$infra&content=$contentdir
+        failovermethod: priority
+        gpgcheck: 1
+        enabled: 1
+
+    - name: import icinga GPG key
+      ansible.builtin.rpm_key:
+        key: https://packages.icinga.com/icinga.key
+        state: present
+
+    - name: install icinga release repository
+      ansible.builtin.yum_repository:
+        name: icinga-stable-release
+        state: present
+        description: ICINGA
+        baseurl: https://packages.icinga.com/epel/$releasever/release/
+        gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-ICINGA
+        gpgcheck: 1
+        enabled: 1
+        metadata_expire: 1d
+
+# ----------------------------------------------------------------------------------
+
+- name: get latest system information
+  ansible.builtin.setup:
+
+- name: update package cache
+  ansible.builtin.package:
+    update_cache: true
+
+- name: merge icingadb configuration between defaults and custom
+  ansible.builtin.set_fact:
+    icingadb_database: "{{ icingadb_defaults_database | combine(icingadb_database, recursive=True) }}"
+    icingadb_redis: "{{ icingadb_defaults_redis | combine(icingadb_redis, recursive=True) }}"
+    icingadb_logging: "{{ icingadb_defaults_logging | combine(icingadb_logging, recursive=True) }}"
+    icingadb_retention: "{{ icingadb_defaults_retention | combine(icingadb_retention, recursive=True) }}"
+
+...

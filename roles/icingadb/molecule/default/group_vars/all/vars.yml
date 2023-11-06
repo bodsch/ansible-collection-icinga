@@ -1,0 +1,36 @@
+---
+
+icingadb_database:
+  host: database
+  port: 3306
+  database: icingadb
+  user: icingadb
+  password: icingadb
+
+icingadb_redis:
+  host: 127.0.0.1
+  port: "{{ redis_network_port }}"
+
+icingadb_logging:
+  level: debug
+  interval: "3s"
+  # options:
+  #   database: debug
+  #   redis: debug
+  #   heartbeat: debug
+  #   high-availability: debug
+  #   config-sync: debug
+  #   history-sync: debug
+  #   runtime-updates: debug
+  #   overdue-sync: debug
+  #   dump-signals: debug
+
+icingadb_retention:
+  history_days: 90
+  sla_days: 90
+  options:
+    acknowledgement: 10
+    comment: 10
+    downtime: 5
+
+...

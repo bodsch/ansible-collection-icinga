@@ -1,0 +1,35 @@
+---
+
+galaxy_info:
+  role_name: icingadb
+  namespace: bodsch
+
+  author: Bodo Schulz
+  description: ansible role for handling icingadb
+  license: "Apache"
+
+  min_ansible_version: "2.9"
+  platforms:
+    - name: ArchLinux
+    - name: Debian
+      versions:
+        # 10
+        - buster
+        # 11
+        - bullseye
+    - name: Ubuntu
+      versions:
+        # 20.04
+        - focal
+    - name: EL
+      versions:
+        - "8"
+
+  galaxy_tags:
+    - monitoring
+    - icinga2
+    - database
+
+dependencies: []
+
+...
