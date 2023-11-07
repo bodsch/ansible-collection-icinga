@@ -6,4 +6,4 @@
   any_errors_fatal: true
 
   roles:
-    - role: ansible-icinga2
+    - role: bodsch.icinga.icinga2

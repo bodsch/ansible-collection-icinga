@@ -1,19 +1,19 @@
 ---
 
 - name: snapd
-  src: bodsch.snapd
+  src: https://github.com/bodsch/ansible-snapd
   version: 1.2.2
 
 - name: apparmor
-  src: bodsch.apparmor
-  version: 1.0.2
+  src: https://github.com/bodsch/ansible-apparmor
+  version: 2.0.0
 
 - name: monitoring-tools
-  src: bodsch.monitoring_plugins
+  src: https://github.com/bodsch/ansible-monitoring-plugins
   version: 1.4.2
 
 - name: mariadb
-  src: bodsch.mariadb
-  version: 2.4.0
+  src: https://github.com/bodsch/ansible-mariadb
+  version: 2.4.1
 
 ...

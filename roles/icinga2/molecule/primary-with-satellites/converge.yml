@@ -20,7 +20,7 @@
   any_errors_fatal: true
 
   roles:
-    - role: ansible-icinga2
+    - role: bodsch.icinga.icinga2
       when:
         - ansible_run_tags | intersect(["all","icinga2_install"]) | count > 0
       tags:
@@ -31,7 +31,7 @@
   any_errors_fatal: true
 
   roles:
-    - role: ansible-icinga2
+    - role: bodsch.icinga.icinga2
       when:
         - ansible_run_tags | intersect(["all","icinga2_configure","icinga2_master"]) | count > 0
       tags:
@@ -42,7 +42,7 @@
   any_errors_fatal: true
 
   roles:
-    - role: ansible-icinga2
+    - role: bodsch.icinga.icinga2
       when:
         - ansible_run_tags | intersect(["all","icinga2_configure","icinga2_satellite"]) | count > 0
       tags:

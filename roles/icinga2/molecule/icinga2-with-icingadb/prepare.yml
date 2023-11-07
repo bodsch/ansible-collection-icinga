@@ -71,6 +71,6 @@
     - role: redis
       tags:
         - always
-    - role: icingadb
+    - role: bodsch.icinga.icingadb
       tags:
         - always

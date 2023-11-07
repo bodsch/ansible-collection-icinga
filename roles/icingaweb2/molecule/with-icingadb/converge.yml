@@ -5,4 +5,4 @@
   any_errors_fatal: false
 
   roles:
-    - role: ansible-icingaweb2
+    - role: bodsch.icinga.icingaweb2

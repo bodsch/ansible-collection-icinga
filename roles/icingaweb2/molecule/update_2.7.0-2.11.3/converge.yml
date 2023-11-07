@@ -8,7 +8,7 @@
     icingaweb_version: 2.7.0
 
   roles:
-    - role: ansible-icingaweb2
+    - role: bodsch.icinga.icingaweb2
 
 - name: update icingaweb to 2.11.3
   hosts: instance
@@ -18,4 +18,4 @@
     icingaweb_version: 2.11.3
 
   roles:
-    - role: ansible-icingaweb2
+    - role: bodsch.icinga.icingaweb2
