@@ -32,7 +32,7 @@ env:
 
 jobs:
   arch:
-    name: "${{ matrix.image }} / ${{ matrix.collection_role }} / ${{ matrix.ansible-version }} / ${{ matrix.python_version }}"
+    name: "${{ matrix.collection_role }} - ${{ matrix.image }}, ansible: ${{ matrix.ansible-version }}, python: ${{ matrix.python_version }}"
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false

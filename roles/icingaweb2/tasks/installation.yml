@@ -124,9 +124,9 @@
 
     - name: install docker python packages  # noqa no-handler
       ansible.builtin.pip:
-        executable: pip3
         requirements: "{{ pip_requirements.requirements_file }}"
         state: present
+        extra_args: "{{ icingaweb_python_extra_args | default([]) | bodsch.core.python_extra_args(python_version=ansible_python.version) | default(omit) }}"
       register: pip_install
       when:
         - pip_requirements.requirements_file is defined
