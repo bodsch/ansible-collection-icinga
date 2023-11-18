@@ -1,6 +1,6 @@
 ---
 
-name: icingaweb with various configuration
+name: icingaweb2 with various configuration
 
 on:
   workflow_run:

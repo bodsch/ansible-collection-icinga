@@ -1,6 +1,6 @@
 ---
 
-name: icingaweb
+name: icingaweb2
 
 on:
   workflow_dispatch:
