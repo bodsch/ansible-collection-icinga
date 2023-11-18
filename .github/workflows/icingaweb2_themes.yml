@@ -1,6 +1,6 @@
 ---
 
-name: icingaweb2 modules
+name: icingaweb2 themes
 
 on:
   workflow_dispatch:
