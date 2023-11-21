@@ -8,7 +8,6 @@
   ansible.builtin.stat:
     path: /usr/share/icinga-php/icinga-php-thirdparty-{{ icingaweb_php_thirdparty }}/vendor/autoload.php
     get_checksum: false
-    get_md5: false
     get_attributes: false
   register: stat_installed_thirdparty
 

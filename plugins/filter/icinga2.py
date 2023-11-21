@@ -185,6 +185,8 @@ class FilterModule(object):
     def host_object_values(self, data, primary, key, ansible_fqdn):
         """
         """
+        display.v(f"host_object_values({data}, {primary}, {key}, {ansible_fqdn})")
+
         _data = data.copy()
 
         endpoint = False
@@ -249,7 +251,7 @@ class FilterModule(object):
     def dns_satellite(self, data, object_name, object_data, satellite_zone, alternatives=[]):
         """
         """
-        # display.v(f"dns_satellite({data}, {object_name}, {object_data}, {satellite_zone}, {alternatives})")
+        display.v(f"dns_satellite({data}, {object_name}, {object_data}, {satellite_zone}, {alternatives})")
 
         result = None
 
@@ -275,7 +277,7 @@ class FilterModule(object):
         if not result:
             result = self.__dns_alternatives(alternatives)
 
-        # display.v(f" = result {result}")
+        display.v(f" = result {result}")
 
         return result
 
@@ -311,6 +313,9 @@ class FilterModule(object):
     def __dns_alternatives(self, alternatives=[]):
         """
         """
+        display.v(f"__dns_alternatives({alternatives})")
+        result = ""
+
         # remove empty elements
         alternatives = [x for x in alternatives if x is not None]
 
@@ -321,13 +326,24 @@ class FilterModule(object):
 
             resolve_error = r.get("error", True)
             if not resolve_error:
-                result = r.get("dns_name", [])
+                dns_name = r.get("addrs", [])
 
-                if len(result) > 0:
+                display.v(f"  -> {dns_name}")
+
+                if len(dns_name) > 1:
                     display.v("  multiple DNS entries are a problem!")
                     display.v("  you should configure 'icinga2_satellites' properly")
 
-                result = result[0]
+                if len(dns_name) == 0:
+                    display.v("  no DNS entries found!")
+
+                if isinstance(dns_name, list):
+                    try:
+                        result = dns_name[0]
+                    except Exception as e:
+                        display.v(f"  Exception {e}")
+                        pass
+
                 break
 
         display.v(f" = result {result}")

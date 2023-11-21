@@ -5,18 +5,17 @@
   ansible.builtin.stat:
     path: '/usr/share/icingaweb2-{{ icingaweb_version }}/library/Icinga/Application/Icinga.php'
     get_checksum: false
-    get_md5: false
     get_mime: false
     get_attributes: false
   register: __stat_present_icingaweb2
-  changed_when: not __stat_present_icingaweb2.stat.exists
+  changed_when: not (
+    __stat_present_icingaweb2.stat is defined and
+    __stat_present_icingaweb2.stat.exists)
 
 - name: detect type of {{ icingaweb_install_dir }}
   ansible.builtin.stat:
     path: "{{ icingaweb_install_dir }}"
     get_checksum: false
-    get_md5: false
-    # get_mime: false
     get_attributes: false
   register: __stat_share_icingaweb2
 

@@ -1,7 +1,12 @@
 #jinja2: trim_blocks: True, lstrip_blocks: True
 // {{ ansible_managed }}
+
 {% if icinga2_host_object is defined and
       icinga2_host_object | count != 0 %}
+
+/*
+  {{ icinga2_host_object }}
+*/
   {#
     define some variables from 'icinga2_host_object' dictionary
   #}
@@ -20,7 +25,6 @@
     address       {{ address }}       - {{ address | bodsch.core.type }}
     -> {{ values }}
 #}
-
 // icinga2 satellite - {{ key }}
 object Host "{{ object_name }}" {
     {% if address is defined and address | string | length > 0 %}
