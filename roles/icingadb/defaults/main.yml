@@ -1,5 +1,7 @@
 ---
 
+icingadb_version: 1.1.0
+
 icingadb_user: icingadb
 icingadb_group: icingadb
 

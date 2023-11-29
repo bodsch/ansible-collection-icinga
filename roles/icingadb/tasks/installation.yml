@@ -68,6 +68,16 @@
         path: /usr/sbin/policy-rc.d
         state: absent
 
+- name: define icingadb version
+  bodsch.icinga.icingadb_version:
+  register: icingadb_version
+
+- name: create custom fact file
+  bodsch.core.facts:
+    name: icingadb
+    facts:
+      version: "{{ icingadb_version.version }}"
+
 - name: re-read ansible facts
   ansible.builtin.setup:
 
