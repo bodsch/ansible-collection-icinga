@@ -20,6 +20,8 @@ from ansible.module_utils.mysql import (
     mysql_driver, mysql_driver_fail_msg
 )
 
+from ansible_collections.bodsch.icinga.plugins.module_utils.database_tools import check_table_schema
+
 __metaclass__ = type
 
 ANSIBLE_METADATA = {
@@ -231,7 +233,9 @@ class IcingaWeb2DatabaseUpdate(object):
                 - db_error(bool)
                 - db_error_message = (str|none)
         """
-        (table_state, db_state, db_msg) = self.__check_table_schema()
+        # (table_state, db_state, db_msg) = self.__check_table_schema()
+        (table_state, db_state, db_msg) = check_table_schema(self.module, self.cursor, self.database_table_name)
+
 
         _msg = None
 
@@ -542,9 +546,6 @@ def main():
             database_name=dict(required=True, type='str'),
             icingaweb_version=dict(required=True, type='str'),
             icingaweb_upgrade_directory=dict(required=True, type='str'),
-
-
-
         ),
         supports_check_mode=False,
     )

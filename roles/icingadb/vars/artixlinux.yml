@@ -2,6 +2,7 @@
 
 icingadb_dependencies:
   - python-pymysql
+  - python-pip
   - mariadb-clients
   - mariadb-libs
   - iproute2

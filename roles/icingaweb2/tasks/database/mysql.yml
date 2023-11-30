@@ -14,7 +14,7 @@
     paths: "{{ icingaweb_install_dir }}"
     file_type: directory
     patterns:
-        - "mysql-upgrades"
+      - "mysql-upgrades"
     recurse: true
   register: found_directory
 
@@ -23,7 +23,7 @@
     paths: "{{ icingaweb_install_dir }}"
     file_type: file
     patterns:
-        - "mysql.schema.sql"
+      - "mysql.schema.sql"
     recurse: true
   register: found_schema
 
@@ -48,7 +48,7 @@
     - found_schema.files | count > 0
 
 - name: ensure database schema for icingaweb is created
-  mysql_schema:
+  bodsch.core.mysql_schema:
     login_host: "{{ icingaweb_auth_backend.database.host }}"
     login_user: "{{ icingaweb_auth_backend.database.username }}"
     login_password: "{{ icingaweb_auth_backend.database.password }}"
@@ -91,7 +91,7 @@
         - icingaweb2_database_schema.failed
 
 - name: update database version information
-  icingaweb_database_update:
+  bodsch.icinga.icingaweb_database_update:
     database_login_host: "{{ icingaweb_auth_backend.database.host }}"
     database_name: "{{ icingaweb_auth_backend.database.dbname }}"
     database_config_file: /etc/icingaweb2/.my.cnf

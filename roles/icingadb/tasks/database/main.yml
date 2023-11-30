@@ -1,0 +1,92 @@
+---
+
+- name: find database schema script
+  ansible.builtin.find:
+    paths: "{{ icingadb_install_dir }}"
+    file_type: file
+    patterns:
+      - "schema.sql"
+    recurse: true
+  register: found_schema
+
+- name: define database schema file
+  ansible.builtin.set_fact:
+    icingadb_database_schema: "{{ found_schema | bodsch.icinga.database_schema('mysql')| first }}"
+  when:
+    - found_schema.files is defined
+    - found_schema.files | count > 0
+
+- name: ensure table_schema is created
+  bodsch.core.mysql_schema:
+    login_host: "{{ icingadb_database.host }}"
+    login_user: "{{ icingadb_database.user }}"
+    login_password: "{{ icingadb_database.password }}"
+    table_schema: "{{ icingadb_database.database }}"
+  # no_log: true
+  register: mysql_icingadb_schema
+  when:
+    - icingadb_database is defined
+    - icingadb_database.host is defined
+    - icingadb_database.user is defined
+    - icingadb_database.password is defined
+    - icingadb_database.database is defined
+
+- name: database
+  when:
+    - mysql_icingadb_schema is defined
+    - mysql_icingadb_schema.exists is defined
+    - not mysql_icingadb_schema.exists
+  block:
+    - name: import database schema
+      community.mysql.mysql_db:
+        state: import
+        login_host: "{{ icingadb_database.host }}"
+        login_user: "{{ icingadb_database.user }}"
+        login_password: "{{ icingadb_database.password }}"
+        config_file: ''
+        name: "{{ icingadb_database.database }}"
+        target: "{{ icingadb_database_schema }}"
+      # no_log: true
+      register: icingadb_database_schema
+
+    - name: error
+      ansible.builtin.fail:
+        msg:
+          - "ERROR: {{ icingadb_database_schema }}"
+      when:
+        - mysql_icingadb_schema is defined
+        - mysql_icingadb_schema.failed is defined
+        - mysql_icingadb_schema.failed
+
+- name: find database upgrades directory
+  ansible.builtin.find:
+    paths: "{{ icingadb_install_dir }}"
+    file_type: directory
+    patterns:
+      - "upgrades"
+    recurse: true
+  register: found_directory
+
+- name: define database upgrade directory
+  ansible.builtin.set_fact:
+    icingadb_upgrade_directory: "{{ found_directory | bodsch.icinga.database_upgrade_directory('mysql')}}"
+  when:
+    - found_directory.files is defined
+    - found_directory.files | count > 0
+
+- name: update database version information
+  bodsch.icinga.icingadb_database_update:
+    database_login_host: "{{ icingadb_database.host }}"
+    database_login_user: "{{ icingadb_database.user }}"
+    database_login_password: "{{ icingadb_database.password }}"
+    database_name: "{{ icingadb_database.database }}"
+    database_config_file: ""
+    icingadb_version: "{{ ansible_local.icingadb.version }}"
+    icingadb_upgrade_directory: "{{ icingadb_upgrade_directory }}"
+  register: _icingadb_database_update
+
+- name: output
+  ansible.builtin.debug:
+    msg: "{{ _icingadb_database_update }}"
+
+...
