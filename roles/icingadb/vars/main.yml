@@ -7,6 +7,9 @@ icingadb_dependencies: []
 icingadb_packages:
   - icingadb
 
+icingadb_python_packages:
+  - name: packaging
+
 icingadb_installed: false
 icingadb_install_dir: /usr/share/icingadb
 

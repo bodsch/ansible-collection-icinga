@@ -5,7 +5,7 @@
     paths: "{{ icingadb_install_dir }}"
     file_type: file
     patterns:
-        - "schema.sql"
+      - "schema.sql"
     recurse: true
   register: found_schema
 
@@ -30,10 +30,6 @@
     - icingadb_database.user is defined
     - icingadb_database.password is defined
     - icingadb_database.database is defined
-
-- name: d
-  debug:
-    msg: "{{ mysql_icingadb_schema | default('') }}"
 
 - name: database
   when:
@@ -67,7 +63,7 @@
     paths: "{{ icingadb_install_dir }}"
     file_type: directory
     patterns:
-        - "upgrades"
+      - "upgrades"
     recurse: true
   register: found_directory
 
@@ -77,10 +73,6 @@
   when:
     - found_directory.files is defined
     - found_directory.files | count > 0
-
-# - name: d
-#   debug:
-#     msg: "{{ icingadb_upgrade_directory | default(omit) }}"
 
 - name: update database version information
   bodsch.icinga.icingadb_database_update:
@@ -98,4 +90,3 @@
     msg: "{{ _icingadb_database_update }}"
 
 ...
-
