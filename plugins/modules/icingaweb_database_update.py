@@ -233,8 +233,10 @@ class IcingaWeb2DatabaseUpdate(object):
                 - db_error(bool)
                 - db_error_message = (str|none)
         """
+        cursor, conn, error, message = self.__mysql_connect()
+
         # (table_state, db_state, db_msg) = self.__check_table_schema()
-        (table_state, db_state, db_msg) = check_table_schema(self.module, self.cursor, self.database_table_name)
+        (table_state, db_state, db_msg) = check_table_schema(self.module, cursor, self.database_table_name)
 
 
         _msg = None
@@ -249,8 +251,6 @@ class IcingaWeb2DatabaseUpdate(object):
               PRIMARY KEY (`dbversion_id`),
               UNIQUE KEY `dbversion` (`name`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8"""
-
-            cursor, conn, error, message = self.__mysql_connect()
 
             if error:
                 return (False, error, message)
