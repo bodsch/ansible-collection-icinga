@@ -162,7 +162,7 @@ def db_close_cursor(module, db_cursor):
         db_cursor.close()
 
 
-def check_table_schema(module, db_cursor, database_table_name):
+def check_table_schema(module, db_cursor, database_table_name, close_cursor=False):
     """
         :return:
             - state (bool)
@@ -182,7 +182,8 @@ def check_table_schema(module, db_cursor, database_table_name):
         pass
 
     finally:
-        db_cursor.close()
+        if close_cursor and db_cursor:
+            db_cursor.close()
 
     if number_of_rows == 1:
         return (True, False, "")
@@ -190,7 +191,7 @@ def check_table_schema(module, db_cursor, database_table_name):
     return (False, False, "")
 
 
-def current_version(module, db_cursor, database_table_name):
+def current_version(module, db_cursor, database_table_name, close_cursor=False):
     """
     """
     _version = None
@@ -208,7 +209,8 @@ def current_version(module, db_cursor, database_table_name):
         pass
 
     finally:
-        db_cursor.close()
+        if close_cursor and db_cursor:
+            db_cursor.close()
 
     if _version:
         _msg = f"found version: {_version}"
