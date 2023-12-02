@@ -7,11 +7,14 @@
     define some variables from 'icinga2_host_object' dictionary
   #}
   {% for key, values in icinga2_host_object.items() %}
-    {% set address = icinga2_masters | dns_icinga_primary(
+    {% set address = icinga2_masters | bodsch.icinga.dns_icinga_primary(
             object_name=key,
             object_data=values,
             alternatives=[key, ansible_fqdn]) %}
-    {% set values, endpoint, endpoint_name, zone_name, display_name, check_command, _ = values | host_object_values(True, key, None) %}
+    {% set values, endpoint, endpoint_name, zone_name, display_name, check_command, _ = values | bodsch.icinga.host_object_values(
+            primary=True, 
+            key=key,
+            ansible_fqdn=None) %}
 {#
     endpoint_name {{ endpoint_name }} - {{ endpoint_name | bodsch.core.type }}
     zone_name     {{ zone_name }}     - {{ zone_name | bodsch.core.type }}

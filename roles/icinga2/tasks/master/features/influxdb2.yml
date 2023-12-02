@@ -5,7 +5,7 @@
     feature_influxdb2_state: "{{ 'present' if icinga2_master_features_enabled | join('|') | regex_search('influxdb2') else 'absent' }}"
 
 - name: enable influxdb2 feature
-  icinga2_features:
+  bodsch.icinga.icinga2_features:
     features:
       - influxdb2
     state: "{{ feature_influxdb2_state }}"

@@ -37,7 +37,7 @@
     - icinga2_primary_master == ansible_fqdn
 
 - name: schedule downtime
-  icinga2_downtime:
+  bodsch.icinga.icinga2_downtime:
     host: "https://localhost"
     username: "{{ icinga2_api.user }}"
     password: "{{ icinga2_api.password }}"

@@ -1,7 +1,7 @@
 ---
 
 - name: disable icinga2 features
-  icinga2_features:
+  bodsch.icinga.icinga2_features:
     state: absent
     ignore_unknown: true
     features:
@@ -27,7 +27,7 @@
         mode: 0666
 
     - name: enable api feature
-      icinga2_features:
+      bodsch.icinga.icinga2_features:
         features:
           - api
         state: present

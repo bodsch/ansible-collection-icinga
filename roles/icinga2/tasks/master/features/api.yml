@@ -5,7 +5,7 @@
     - icinga2_master_features_enabled | join('|') | regex_search('api')
   block:
     - name: enable api feature
-      icinga2_features:
+      bodsch.icinga.icinga2_features:
         features:
           - api
         state: present

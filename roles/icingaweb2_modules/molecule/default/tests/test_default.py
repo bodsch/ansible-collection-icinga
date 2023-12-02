@@ -17,7 +17,7 @@ def base_directory():
     pp.pprint(cwd)
     pp.pprint(os.listdir(cwd))
 
-    if('group_vars' in os.listdir(cwd)):
+    if ('group_vars' in os.listdir(cwd)):
         directory = "../.."
         molecule_directory = "."
     else:
@@ -73,4 +73,3 @@ def test_directories(host, dirs):
 def test_files(host, files):
     f = host.file(files)
     assert f.exists
-

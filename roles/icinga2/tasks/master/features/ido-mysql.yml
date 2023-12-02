@@ -142,7 +142,7 @@
       delay: 10
 
     - name: detect mysql ido version
-      icinga2_ido_version:
+      bodsch.icinga.icinga2_ido_version:
         dba_host: "{{ icinga2_ido.host }}"
         dba_user: "{{ icinga2_ido.user }}"
         dba_password: "{{ icinga2_ido.password }}"
@@ -184,7 +184,7 @@
     mode: 0660
 
 - name: enable ido-mysql feature
-  icinga2_features:
+  bodsch.icinga.icinga2_features:
     features:
       - ido-mysql
     state: present

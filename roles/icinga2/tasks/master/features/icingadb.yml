@@ -5,7 +5,7 @@
     - icinga2_master_features_enabled | join('|') | regex_search('icingadb')
   block:
     - name: enable icingadb feature
-      icinga2_features:
+      bodsch.icinga.icinga2_features:
         features:
           - icingadb
         state: present

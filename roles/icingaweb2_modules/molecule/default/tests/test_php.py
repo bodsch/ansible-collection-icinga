@@ -18,7 +18,7 @@ def base_directory():
     """ ... """
     cwd = os.getcwd()
 
-    if('group_vars' in os.listdir(cwd)):
+    if ('group_vars' in os.listdir(cwd)):
         directory = "../.."
         molecule_directory = "."
     else:
@@ -118,8 +118,6 @@ def test_fpm_pools(host, get_vars):
 
     f = host.file(socket_name)
     assert f.exists
-
-    listen = []
 
     if not (distribution == 'ubuntu' and release == '18.04'):
         assert host.socket("unix://{}".format(socket_name)).is_listening
