@@ -7,20 +7,12 @@
 
 from __future__ import absolute_import, print_function
 import os
-import warnings
-import re
 
 from packaging.version import Version, parse as parseVersion
-from packaging.version import InvalidVersion
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.six.moves import configparser
-from ansible.module_utils._text import to_native
-from ansible.module_utils.mysql import (
-    mysql_driver, mysql_driver_fail_msg
-)
 
-from ansible_collections.bodsch.icinga.plugins.module_utils.database_tools import check_table_schema
+from ansible_collections.bodsch.icinga.plugins.module_utils.icinga_database import IcingaDatabase
 
 __metaclass__ = type
 
@@ -35,18 +27,20 @@ DOCUMENTATION = """
 module: icingaweb_database_update.py
 author:
     - 'Bodo Schulz'
-short_description: handle user and they preferences in a mysql.
+short_description: handle database updates for icingaweb.
 description: ''
 """
 
 EXAMPLES = """
-- name: import icingaweb users into database
+- name: update database version information
   become: true
-  icingaweb_database_update:
+  bodsch.icinga.icingaweb_database_update:
     database_login_host: database
     database_name: icingaweb_config
     database_config_file: /etc/icingaweb2/.my.cnf
     icingaweb_version: "2.11.3"
+    icingaweb_upgrade_directory: "{{ icingaweb_upgrade_directory }}"
+  register: _icingaweb_database_update
 """
 
 
@@ -91,10 +85,26 @@ class IcingaWeb2DatabaseUpdate(object):
         _failed = False
         _msg = "module init."
 
-        if mysql_driver is None:
-            self.module.fail_json(msg=mysql_driver_fail_msg)
-        else:
-            warnings.filterwarnings('error', category=mysql_driver.Warning)
+        self.icinga_database = IcingaDatabase(
+            self.module,
+            hostname=self.database_login_host,
+            port=self.database_login_port,
+            socket=self.database_login_socket,
+            config_file=self.database_config_file
+        )
+
+        self.icinga_database.db_credentials(
+            db_username=self.database_login_user,
+            db_password=self.database_login_password,
+            db_schema_name=self.database_name
+        )
+
+        (db_connect_error, db_message) = self.icinga_database.db_connect()
+        if db_connect_error:
+            return dict(
+                failed=True,
+                msg=db_message
+            )
 
         # first step:
         # create table (if needed)
@@ -116,8 +126,7 @@ class IcingaWeb2DatabaseUpdate(object):
                 msg=message
             )
 
-        _msg = f"  versions: {current_version} vs. {self.icingaweb_version}"
-        self.module.log(_msg)
+        self.module.log(f"Database version: is {current_version} to should be {self.icingaweb_version}.")
 
         if not current_version:
             (state, db_error, message) = self.__update_version(version=self.icingaweb_version)
@@ -134,16 +143,14 @@ class IcingaWeb2DatabaseUpdate(object):
             if Version(current_version) == Version(self.icingaweb_version):
                 # self.module.log("versions equal.")
                 return dict(
-                    changed = False,
-                    failed = False,
-                    msg = "icingaweb database is up to date."
+                    changed=False,
+                    failed=False,
+                    msg="Icingaweb database is up to date."
                 )
 
             elif Version(current_version) < Version(self.icingaweb_version):
                 self.module.log(f"upgrade to version {self.icingaweb_version} needed.")
                 (state, db_error, message) = self.upgrade_database(from_version=current_version)
-
-                # self.module.log(msg=f" - upgrade_database  : {state}, {db_error}, {message}")
 
                 if db_error:
                     _failed = True
@@ -155,76 +162,16 @@ class IcingaWeb2DatabaseUpdate(object):
 
             else:
                 return dict(
-                    changed = False,
-                    failed = False,
-                    msg = f"icingaweb database downgrade are not supported. (current version are {current_version})"
+                    changed=False,
+                    failed=False,
+                    msg=f"icingaweb database downgrade are not supported. (current version are {current_version})"
                 )
 
         return dict(
-            changed = _changed,
-            failed = _failed,
-            msg = _msg
+            changed=_changed,
+            failed=_failed,
+            msg=_msg
         )
-
-    def __hash(self, plaintext):
-        """
-          https://docs.python.org/3/library/crypt.html
-        """
-        import crypt
-        salt = ""
-        try:
-            salt = crypt.mksalt(crypt.METHOD_SHA512)
-        except Exception:
-            import random
-            CHARACTERS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-            salt = ''.join(random.choice(CHARACTERS) for i in range(16))
-            # Use SHA512
-            # return '$6$' + salt
-
-        return crypt.crypt(
-            plaintext,
-            salt
-        )
-
-    def __checksum(self, plaintext):
-        """
-        """
-        import hashlib
-        _bytes = plaintext.encode('utf-8')
-        _hash = hashlib.sha256(_bytes)
-        return _hash.hexdigest()
-
-    def __check_table_schema(self):
-        """
-            :return:
-                - state (bool)
-                - db_error(bool)
-                - db_error_message = (str|none)
-        """
-        q = f"SELECT * FROM information_schema.tables WHERE table_name = '{self.database_table_name}'"
-
-        number_of_rows = 0
-
-        cursor, conn, error, message = self.__mysql_connect()
-
-        if error:
-            return (False, error, message)
-
-        try:
-            number_of_rows = cursor.execute(q)
-            cursor.fetchone()
-
-        except Exception as e:
-            self.module.fail_json(msg=f"Cannot execute SQL '{q}' : {to_native(e)}")
-            pass
-
-        finally:
-            cursor.close()
-
-        if number_of_rows == 1:
-            return (True, False, "")
-
-        return (False, False, "")
 
     def __create_table_schema(self):
         """
@@ -233,13 +180,11 @@ class IcingaWeb2DatabaseUpdate(object):
                 - db_error(bool)
                 - db_error_message = (str|none)
         """
-        cursor, conn, error, message = self.__mysql_connect()
-
-        # (table_state, db_state, db_msg) = self.__check_table_schema()
-        (table_state, db_state, db_msg) = check_table_schema(self.module, cursor, self.database_table_name)
-
-
+        state = True
+        db_error = False
         _msg = None
+
+        (table_state, db_state, db_msg) = self.icinga_database.check_table_schema(self.database_table_name)
 
         if not table_state:
             q = f"""CREATE TABLE `{self.database_table_name}` (
@@ -252,81 +197,22 @@ class IcingaWeb2DatabaseUpdate(object):
               UNIQUE KEY `dbversion` (`name`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8"""
 
-            if error:
-                return (False, error, message)
+            (state, db_error, db_message) = self.icinga_database.db_execute(q)
 
-            try:
-                cursor.execute(q)
-                conn.commit()
+            if state:
                 _msg = f"table {self.database_table_name} successful created."
+            else:
+                _msg = db_message
 
-            except Exception as e:
-                conn.rollback()
-                self.module.fail_json(msg=f"Cannot execute SQL '{q}' : {to_native(e)}")
-
-            finally:
-                cursor.close()
-
-        return (True, False, _msg)
-
-    def __current_version(self):
-        """
-        """
-        _version = None
-        _msg = None
-
-        cursor, conn, error, message = self.__mysql_connect()
-
-        if error:
-            return (False, error, message)
-
-        q = f"select version from {self.database_table_name}"
-
-        try:
-            cursor.execute(q)
-            _version = cursor.fetchone()[0]
-
-        except Exception as e:
-            _msg = f"Cannot execute SQL '{q}' : {to_native(e)}"
-            pass
-
-        finally:
-            cursor.close()
-
-        if _version:
-            _msg = f"found version: {_version}"
-            self.module.log(_msg)
-
-        return (_version, False, _msg)
+        return (state, db_error, _msg)
 
     def __update_version(self, version):
         """
         """
-        cursor, conn, db_error, db_message = self.__mysql_connect()
-
-        if db_error:
-            return False, db_error, db_message
-
         q = f"""replace INTO {self.database_table_name} (name, version, modify_time)
             VALUES ('icingaweb', '{version}', now())"""
 
-        state = False
-        db_error = False
-        db_message = None
-
-        try:
-            cursor.execute(q)
-            conn.commit()
-            state = True
-        except Exception as e:
-            conn.rollback()
-            state = False
-            db_error = True
-            db_message = f"Cannot execute SQL '{q}' : {to_native(e)}"
-
-            self.module.log(msg=db_message)
-        finally:
-            cursor.close()
+        (state, db_error, db_message) = self.icinga_database.db_execute(q)
 
         return (state, db_error, db_message)
 
@@ -341,7 +227,7 @@ class IcingaWeb2DatabaseUpdate(object):
 
         upgrade_files = self.__read_database_upgrades(from_version=from_version)
 
-        cursor, conn, db_error, db_message = self.__mysql_connect()
+        db_error, db_message = self.icinga_database.db_connect()
 
         if db_error:
             return False, db_error, db_message
@@ -356,32 +242,12 @@ class IcingaWeb2DatabaseUpdate(object):
 
             self.module.log(msg=f"upgrade database to version: {file_version}")
 
-            sql_commands = []
-
-            state = False
-            db_error = False
-            db_message = None
-            _msg = None # f"file '{upgrade}' successful imported."
-
-            with open(upgrade, encoding='utf8') as f:
-                sql_commands = f.read().split(';\n')
-
-                for command in sql_commands:
-                    state = False
-                    db_error = False
-                    db_message = None
-
-                    if command:
-                        # self.module.log(msg=command.strip())
-                        (state, db_error, db_message) = self.__db_execute(command.strip())
-                        if db_error:
-                            break
-
-            if db_error:
-                state = True
-                _msg = f"Cannot import file '{upgrade}' : {to_native(db_message)}"
-            else:
-                _msg = f"file '{upgrade}' successful imported."
+            (state, _msg) = self.icinga_database.db_import_sqlfile(
+                sql_file=file_name,
+                commit=True,
+                rollback=True,
+                close_cursor=False
+            )
 
             result_state[file_version].update({
                 "failed": state,
@@ -410,9 +276,6 @@ class IcingaWeb2DatabaseUpdate(object):
         self.module.log(msg=f"search versions between {from_version} and {self.icingaweb_version}")
 
         for root, dirs, files in os.walk(self.icingaweb_upgrade_directory, topdown=False):
-            # self.module.log(msg=f"  - root : {root}")
-            # self.module.log(msg=f"  - dirs : {dirs}")
-            # self.module.log(msg=f"  - files: {files}")
             if files:
                 _versions = files
 
@@ -427,106 +290,13 @@ class IcingaWeb2DatabaseUpdate(object):
                 upgrade_versions.append(version_string)
 
         # version sort
-        upgrade_versions.sort(key = parseVersion)
+        upgrade_versions.sort(key=parseVersion)
 
         for v in upgrade_versions:
             self.module.log(msg=f"  - {v}")
             upgrade_files.append(os.path.join(root, f"{v}.sql"))
 
         return upgrade_files
-
-    def __mysql_connect(self):
-        """
-
-        """
-        config = {}
-
-        config_file = self.database_config_file
-
-        if config_file and os.path.exists(config_file):
-            config['read_default_file'] = config_file
-
-        if self.database_login_socket:
-            config['unix_socket'] = self.database_login_socket
-        else:
-            config['host'] = self.database_login_host
-            config['port'] = self.database_login_port
-
-        # If login_user or login_password are given, they should override the
-        # config file
-        if self.database_login_user is not None:
-            config['user'] = self.database_login_user
-        if self.database_login_password is not None:
-            config['passwd'] = self.database_login_password
-
-        config['db'] = self.database_name
-
-        try:
-            db_connection = mysql_driver.connect(**config)
-
-        except Exception as e:
-            message = "unable to connect to database. "
-            message += "check login_host, login_user and login_password are correct "
-            message += f"or {config_file} has the credentials. "
-            message += f"Exception message: {to_native(e)}"
-
-            self.module.log(msg=message)
-
-            return (None, None, True, message)
-
-        return (db_connection.cursor(), db_connection, False, "successful connected")
-
-    def __parse_from_mysql_config_file(self, cnf):
-        cp = configparser.ConfigParser()
-        cp.read(cnf)
-        return cp
-
-    def __db_execute(self, query, rollback=True):
-        """
-        """
-        cursor, conn, error, message = self.__mysql_connect()
-
-        if error:
-            return (False, error, message)
-
-        state = False
-        db_error = False
-        db_message = None
-
-        try:
-            # pass
-            cursor.execute(query)
-            conn.commit()
-            state = True
-            # state = False
-            # db_error = True
-            # db_message = "test fehler"
-
-        except mysql_driver.Warning as e:
-            error_id = e.args[0]
-            error_msg = e.args[1]
-            self.module.log(msg=f"WARNING: {error_id} - {error_msg}")
-
-        except (mysql_driver.Error) as e:
-            error_id = e.args[0]
-            error_msg = e.args[1]
-
-            if error_id == 1050:  # Table '...' already exists
-                self.module.log(msg=f"WARNING: {error_msg}")
-
-        except Exception as e:
-            db_error = True
-            db_message = f"Cannot execute SQL '{query}' : {to_native(e)}"
-
-            if rollback:
-                conn.rollback()
-
-            pass
-
-        finally:
-            cursor.close()
-
-        return (state, db_error, db_message)
 
 
 # ===========================================

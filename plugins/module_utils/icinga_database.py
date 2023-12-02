@@ -9,7 +9,7 @@ import os
 
 from ansible.module_utils._text import to_native
 from ansible.module_utils.mysql import (
-    mysql_driver, mysql_driver_fail_msg
+    mysql_driver
 )
 
 
@@ -24,13 +24,14 @@ class IcingaDatabase():
         self.db_host = hostname
         self.db_port = port
 
-    def db_connect(self, db_username, db_password, db_schema_name):
+        self.db_connection = None
+        self.db_cursor = None
+        self.config = {}
+
+    def db_credentials(self, db_username, db_password, db_schema_name):
         """
-            connect to Database
         """
-        db_connection = None
-        db_cursor = None
-        db_connect_error = True
+        # self.module.log(f"IcingaDatabase::db_credentials({db_username}, {db_password}, {db_schema_name})")
 
         config = {}
 
@@ -52,9 +53,19 @@ class IcingaDatabase():
 
         config['db'] = db_schema_name
 
+        self.config = config
+
+    def db_connect(self):
+        """
+            connect to Database
+        """
+        # self.module.log(f"IcingaDatabase::db_connect()")
+
+        db_connect_error = True
+
         try:
-            db_connection = mysql_driver.connect(**config)
-            db_cursor = db_connection.cursor()
+            self.db_connection = mysql_driver.connect(**self.config)
+            self.db_cursor = self.db_connection.cursor()
             db_connect_error = False
 
         except Exception as e:
@@ -64,15 +75,22 @@ class IcingaDatabase():
             message += f"Exception message: {to_native(e)}"
 
             self.module.log(msg=message)
-            return (db_cursor, db_connection, db_connect_error, message)
+            return (db_connect_error, message)
 
-        return (db_cursor, db_connection, db_connect_error, "successful connected")
-
+        return (db_connect_error, "successful connected")
 
     def db_execute(self, query, commit=True, rollback=True, close_cursor=False):
         """
             execute Query
         """
+        # self.module.log(f"IcingaDatabase::db_execute({query}, {commit}, {rollback}, {close_cursor})")
+        # self.module.log(f"  {type(self.db_connection)}")
+        # self.module.log(f"  {type(self.db_cursor)}")
+
+        # if not self.db_cursor:
+        if self.db_connection:
+            self.db_cursor = self.db_connection.cursor()
+
         state = False
         db_error = False
         db_message = None
@@ -121,15 +139,14 @@ class IcingaDatabase():
 
         return (state, db_error, db_message)
 
-
-    def db_import_sqlfile(self, sql_file, commit=True, rollback=True, close_cursor=True):
+    def db_import_sqlfile(self, sql_file, commit=True, rollback=True, close_cursor=False):
         """
             import complete SQL script
         """
+        self.module.log(f"IcingaDatabase::db_import_sqlfile({sql_file}, {commit}, {rollback}, {close_cursor})")
+
         if not os.path.exists(sql_file):
             return (False, f"The file {sql_file} does not exist.")
-
-        self.module.log(f"import sql file: {sql_file}")
 
         state = False
         db_error = False
@@ -142,7 +159,7 @@ class IcingaDatabase():
             sql_commands = sql_data.split(';\n')
             # remove all lines with '--' prefix (SQL comments)
             # replace \n and strip lines
-            sql_commands = [x.replace("\n","").strip() for x in sql_commands if not x.replace("\n","").strip().startswith("--")]
+            sql_commands = [x.replace("\n", "").strip() for x in sql_commands if not x.replace("\n", "").strip().startswith("--")]
 
             for command in sql_commands:
                 state = False
@@ -151,7 +168,7 @@ class IcingaDatabase():
 
                 if command:
                     # self.module.log(f"execute statement: '{command}'")
-                    (state, db_error, db_message) = self.db_execute(command, commit=False)
+                    (state, db_error, db_message) = self.db_execute(query=command, commit=commit)
                     if db_error:
                         break
 
@@ -172,7 +189,6 @@ class IcingaDatabase():
 
         return (state, _msg)
 
-
     def check_table_schema(self, database_table_name):
         """
             :return:
@@ -180,6 +196,10 @@ class IcingaDatabase():
                 - db_error(bool)
                 - db_error_message = (str|none)
         """
+        state = False
+        db_error = False
+        db_error_message = ""
+
         q = f"SELECT * FROM information_schema.tables WHERE table_name = '{database_table_name}'"
 
         number_of_rows = 0
@@ -188,38 +208,88 @@ class IcingaDatabase():
             number_of_rows = self.db_cursor.execute(q)
             self.db_cursor.fetchone()
 
+        except mysql_driver.Warning as e:
+            try:
+                error_id = e.args[0]
+                error_msg = e.args[1]
+                self.module.log(msg=f"WARNING: {error_id} - {error_msg}")
+                pass
+            except Exception:
+                self.module.log(msg=f"WARNING: {str(e)}")
+                pass
+
+        except mysql_driver.Error as e:
+            try:
+                error_id = e.args[0]
+                error_msg = e.args[1]
+
+                if error_id == 1050:  # Table '...' already exists
+                    self.module.log(msg=f"WARNING: {error_msg}")
+                    pass
+            except Exception:
+                self.module.log(msg=f"ERROR: {str(e)}")
+                pass
+
         except Exception as e:
-            self.module.fail_json(msg=f"Cannot execute SQL '{q}' : {to_native(e)}")
+            self.module.log(f"Cannot execute SQL '{q}' : {to_native(e)}")
             pass
 
-        finally:
-            self.db_cursor.close()
-
         if number_of_rows == 1:
-            return (True, False, "")
+            state = True
+            db_error = False
+            db_error_message = f"database schema {database_table_name} has already been created."
+            # sreturn (True, False, "")
 
-        return (False, False, "")
-
+        return (state, db_error, db_error_message)
 
     def current_version(self, database_table_name):
         """
         """
+        # self.module.log(f"IcingaDatabase::current_version({database_table_name})")
+        # self.module.log(f"  {type(self.db_connection)}")
+        # self.module.log(f"  {type(self.db_cursor)}")
+
+        # if not self.db_cursor:
+        if self.db_connection:
+            # self.module.log(f"  re-create db cursor")
+            self.db_cursor = self.db_connection.cursor()
+
         _version = None
         _msg = None
 
         q = f"select version from {database_table_name} order by version desc limit 1"
         # q = f"select version from {database_table_name}"
+        # self.module.log(f"query : {q}")
 
         try:
             self.db_cursor.execute(q)
             _version = self.db_cursor.fetchone()[0]
 
-        except Exception as e:
-            _msg = f"Cannot execute SQL '{q}' : {to_native(e)}"
-            pass
+        except mysql_driver.Warning as e:
+            try:
+                error_id = e.args[0]
+                error_msg = e.args[1]
+                self.module.log(msg=f"WARNING: {error_id} - {error_msg}")
+                pass
+            except Exception:
+                self.module.log(msg=f"WARNING: {str(e)}")
+                pass
 
-        finally:
-            self.db_cursor.close()
+        except mysql_driver.Error as e:
+            try:
+                error_id = e.args[0]
+                error_msg = e.args[1]
+
+                if error_id == 1050:  # Table '...' already exists
+                    self.module.log(msg=f"WARNING: {error_msg}")
+                    pass
+            except Exception:
+                self.module.log(msg=f"ERROR: {str(e)}")
+                pass
+
+        except Exception as e:
+            self.module.log(f"Cannot execute SQL '{q}' : {to_native(e)}")
+            pass
 
         if _version:
             _msg = f"found version: {_version}"

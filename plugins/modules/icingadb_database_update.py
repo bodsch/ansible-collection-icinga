@@ -7,51 +7,36 @@
 
 from __future__ import absolute_import, print_function
 import os
-import sys
-import warnings
-import re
-
-from enum import Enum
 
 from packaging.version import Version, parse as parseVersion
-from packaging.version import InvalidVersion
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.six.moves import configparser
-from ansible.module_utils._text import to_native
-from ansible.module_utils.mysql import (
-    mysql_driver, mysql_driver_fail_msg
-)
 
-from ansible_collections.bodsch.icinga.plugins.module_utils.database_tools import (
-    db_connect, db_execute, db_import_sqlfile, db_close_cursor, check_table_schema, current_version
-)
+from ansible_collections.bodsch.icinga.plugins.module_utils.icinga_database import IcingaDatabase
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {
-    'metadata_version': '0.1',
-    'status': ['preview'],
-    'supported_by': 'community'
-}
 
 DOCUMENTATION = """
 ---
 module: icingadb_database_update.py
 author:
     - 'Bodo Schulz'
-short_description: handle user and they preferences in a mysql.
+short_description: handle database updates for icingawdb.
 description: ''
 """
 
 EXAMPLES = """
-- name: import icingaweb users into database
-  become: true
-  icingadb_database_update:
-    database_login_host: database
-    database_name: icingadb_config
-    database_config_file: /etc/icingadb/.my.cnf
-    icingadb_version: "2.11.3"
+- name: update database version information
+  bodsch.icinga.icingadb_database_update:
+    database_login_host: "{{ icingadb_database.host }}"
+    database_login_user: "{{ icingadb_database.user }}"
+    database_login_password: "{{ icingadb_database.password }}"
+    database_name: "{{ icingadb_database.database }}"
+    database_config_file: ""
+    icingadb_version: "{{ ansible_local.icingadb.version }}"
+    icingadb_upgrade_directory: "{{ icingadb_upgrade_directory }}"
+  register: _icingadb_database_update
 """
 
 # TODO
@@ -59,6 +44,7 @@ EXAMPLES = """
 #  1.0.0 = 3
 #  1.1.0 = 4
 #  1.1.1 = 5
+
 
 class IcingaDbDatabaseUpdate(object):
     """
@@ -101,41 +87,30 @@ class IcingaDbDatabaseUpdate(object):
         _failed = False
         _msg = "module init."
 
-        if mysql_driver is None:
-            self.module.fail_json(msg=mysql_driver_fail_msg)
-        else:
-            warnings.filterwarnings('error', category=mysql_driver.Warning)
-
-        cursor, conn, db_error, db_message = db_connect(
+        self.icinga_database = IcingaDatabase(
             self.module,
-            self.database_config_file,
-            self.database_login_socket,
-            self.database_login_host,
-            self.database_login_port,
-            self.database_login_user,
-            self.database_login_password,
-            self.database_name) # self.__mysql_connect()
+            hostname=self.database_login_host,
+            port=self.database_login_port,
+            socket=self.database_login_socket,
+            config_file=self.database_config_file
+        )
 
-        if db_error:
+        self.icinga_database.db_credentials(
+            db_username=self.database_login_user,
+            db_password=self.database_login_password,
+            db_schema_name=self.database_name
+        )
+
+        (db_connect_error, db_message) = self.icinga_database.db_connect()
+        if db_connect_error:
             return dict(
-                failed = True,
-                msg = db_message, # db_message
+                failed=True,
+                msg=db_message
             )
-            #return False, db_error, db_message
-
-        # first step:
-        # create table (if needed)
-        # (state, db_error, message) = self.__create_table_schema()
-        #
-        # if db_error:
-        #     return dict(
-        #         failed=True,
-        #         msg=message
-        #     )
 
         # step two:
         # check current version
-        (curr_version, db_error, message) = current_version(self.module, cursor, self.database_table_name)
+        (curr_version, db_error, message) = self.icinga_database.current_version(self.database_table_name)
 
         if db_error:
             return dict(
@@ -143,12 +118,9 @@ class IcingaDbDatabaseUpdate(object):
                 msg=message
             )
 
-        # self.module.log(f" -> {curr_version} {db_error}, {message}")
-
         curr_version = self.version_string(curr_version)
 
-        _msg = f"  versions: {curr_version} vs. {self.icingadb_version}"
-        self.module.log(_msg)
+        self.module.log(f"Database version: is {curr_version} to should be {self.icingadb_version}.")
 
         if not curr_version:
             (state, db_error, message) = self.__update_version(version=self.icingadb_version)
@@ -165,16 +137,14 @@ class IcingaDbDatabaseUpdate(object):
             if Version(curr_version) == Version(self.icingadb_version):
                 # self.module.log("versions equal.")
                 return dict(
-                    changed = False,
-                    failed = False,
-                    msg = "icingaweb database is up to date."
+                    changed=False,
+                    failed=False,
+                    msg="icingaweb database is up to date."
                 )
 
             elif Version(curr_version) < Version(self.icingadb_version):
                 self.module.log(f"upgrade to version {self.icingadb_version} needed.")
                 (state, db_error, message) = self.upgrade_database(from_version=curr_version)
-
-                # self.module.log(msg=f" - upgrade_database  : {state}, {db_error}, {message}")
 
                 if db_error:
                     _failed = True
@@ -186,15 +156,15 @@ class IcingaDbDatabaseUpdate(object):
 
             else:
                 return dict(
-                    changed = False,
-                    failed = False,
-                    msg = f"icingaweb database downgrade are not supported. (current version are {curr_version})"
+                    changed=False,
+                    failed=False,
+                    msg=f"icingaweb database downgrade are not supported. (current version are {curr_version})"
                 )
 
         return dict(
-            changed = _changed,
-            failed = _failed,
-            msg = _msg
+            changed=_changed,
+            failed=_failed,
+            msg=_msg
         )
 
     def version_string(self, db_version):
@@ -209,89 +179,14 @@ class IcingaDbDatabaseUpdate(object):
         else:
             return None
 
-
-    # def __hash(self, plaintext):
-    #     """
-    #       https://docs.python.org/3/library/crypt.html
-    #     """
-    #     import crypt
-    #     salt = ""
-    #     try:
-    #         salt = crypt.mksalt(crypt.METHOD_SHA512)
-    #     except Exception:
-    #         import random
-    #         CHARACTERS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    #         salt = ''.join(random.choice(CHARACTERS) for i in range(16))
-    #         # Use SHA512
-    #         # return '$6$' + salt
-    #
-    #     return crypt.crypt(
-    #         plaintext,
-    #         salt
-    #     )
-
-    def __checksum(self, plaintext):
-        """
-        """
-        import hashlib
-        _bytes = plaintext.encode('utf-8')
-        _hash = hashlib.sha256(_bytes)
-        return _hash.hexdigest()
-
-    # def __update_version(self, version):
-    #     """
-    #     """
-    #     cursor, conn, db_error, db_message = self.__mysql_connect()
-    #
-    #     if db_error:
-    #         return False, db_error, db_message
-    #
-    #     q = f"""replace INTO {self.database_table_name} (version)
-    #         VALUES ('{version}')"""
-    #
-    #     state = False
-    #     db_error = False
-    #     db_message = None
-    #
-    #     try:
-    #         cursor.execute(q)
-    #         conn.commit()
-    #         state = True
-    #     except Exception as e:
-    #         conn.rollback()
-    #         state = False
-    #         db_error = True
-    #         db_message = f"Cannot execute SQL '{q}' : {to_native(e)}"
-    #
-    #         self.module.log(msg=db_message)
-    #     finally:
-    #         cursor.close()
-    #
-    #     return (state, db_error, db_message)
-
     def upgrade_database(self, from_version="1.0.0"):
         """
         """
         state = False
         db_error = False
-        db_message = None
-
         result_state = {}
 
         upgrade_files = self.__read_database_upgrades(from_version=from_version)
-
-        cursor, conn, db_error, db_message = db_connect(
-            self.module,
-            self.database_config_file,
-            self.database_login_socket,
-            self.database_login_host,
-            self.database_login_port,
-            self.database_login_user,
-            self.database_login_password,
-            self.database_name) # self.__mysql_connect()
-
-        if db_error:
-            return False, db_error, db_message
 
         for upgrade in upgrade_files:
             """
@@ -300,22 +195,14 @@ class IcingaDbDatabaseUpdate(object):
             file_version = file_name.replace(".sql", "")
 
             result_state[str(file_version)] = {}
-
-            # self.module.log(msg=f"upgrade database to version: {file_version}")
-
-            sql_commands = []
+            self.module.log(msg=f"upgrade database to version: {file_version}")
 
             state = False
             db_error = False
-            db_message = None
-            _msg = None # f"file '{upgrade}' successful imported."
 
-            state, msg = db_import_sqlfile(
-                module=self.module,
+            state, msg = self.icinga_database.db_import_sqlfile(
                 sql_file=upgrade,
-                db_cursor=cursor,
-                db_connection=conn,
-                close_cursor=False
+                close_cursor=True
             )
 
             result_state[file_version].update({
@@ -325,9 +212,6 @@ class IcingaDbDatabaseUpdate(object):
 
             if state:
                 break
-
-        if cursor:
-            db_close_cursor(self.module, cursor)
 
         failed = (len({k: v for k, v in result_state.items() if v.get('failed', False)}) > 0)
 
@@ -343,13 +227,7 @@ class IcingaDbDatabaseUpdate(object):
         upgrade_files = []
         upgrade_versions = []
 
-        # self.module.log(msg=f"search versions between {from_version} and {self.icingadb_version}")
-
         for root, dirs, files in os.walk(self.icingadb_upgrade_directory, topdown=False):
-            # self.module.log(msg=f"  - root : {root}")
-            # self.module.log(msg=f"  - dirs : {dirs}")
-            # self.module.log(msg=f"  - files: {files}")
-
             if files:
                 _versions = files
 
@@ -364,40 +242,61 @@ class IcingaDbDatabaseUpdate(object):
                 upgrade_versions.append(version_string)
 
         # version sort
-        upgrade_versions.sort(key = parseVersion)
+        upgrade_versions.sort(key=parseVersion)
 
         for v in upgrade_versions:
-            # self.module.log(msg=f"  - {v}")
             upgrade_files.append(os.path.join(root, f"{v}.sql"))
 
         return upgrade_files
 
 
-# ===========================================
-# Module execution.
-#
-
-
 def main():
-    module = AnsibleModule(
-        argument_spec=dict(
-            database_login_user=dict(type='str'),
-            database_login_password=dict(type='str', no_log=True),
-            database_login_host=dict(type='str', default='localhost'),
-            database_login_port=dict(type='int', default=3306),
-            database_login_unix_socket=dict(type='str'),
-            database_config_file=dict(type='path'),
-            database_name=dict(required=True, type='str'),
-            icingadb_version=dict(required=True, type='str'),
-            icingadb_upgrade_directory=dict(required=True, type='str'),
+
+    args = dict(
+        database_login_user=dict(
+            type='str'
         ),
+        database_login_password=dict(
+            type='str',
+            no_log=True
+        ),
+        database_login_host=dict(
+            type='str',
+            default='localhost'
+        ),
+        database_login_port=dict(
+            type='int',
+            default=3306
+        ),
+        database_login_unix_socket=dict(
+            type='str'
+        ),
+        database_config_file=dict(
+            type='path'
+        ),
+        database_name=dict(
+            required=True,
+            type='str'
+        ),
+        icingadb_version=dict(
+            required=True,
+            type='str'
+        ),
+        icingadb_upgrade_directory=dict(
+            required=True,
+            type='str'
+        ),
+    )
+
+    module = AnsibleModule(
+        argument_spec=args,
         supports_check_mode=False,
     )
 
-    icingaweb = IcingaDbDatabaseUpdate(module)
-    result = icingaweb.run()
+    icingadb = IcingaDbDatabaseUpdate(module)
+    result = icingadb.run()
 
-    module.log(msg="= result : '{}'".format(result))
+    module.log(msg=f"= result: {result}")
 
     module.exit_json(**result)
 
