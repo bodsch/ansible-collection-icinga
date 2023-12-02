@@ -118,7 +118,7 @@ class IcingaWeb2DatabaseUpdate(object):
 
         # step two:
         # check current version
-        (current_version, db_error, message) = self.__current_version()
+        (current_version, db_error, message) = self.icinga_database.current_version(self.database_table_name)
 
         if db_error:
             return dict(
