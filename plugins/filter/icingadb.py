@@ -24,9 +24,6 @@ class FilterModule(object):
 
         result = []
 
-        #_data = data.copy()
-        # display.v(f"{json.dumps(data, indent=2)}")
-
         files = data.get("files")
         path = [x.get("path") for x in files]
 
