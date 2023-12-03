@@ -66,7 +66,7 @@ class FilterModule(object):
         """
         display.v(f"dict_from_list({data}, {search})")
 
-        if(isinstance(data, dict)):
+        if isinstance(data, dict):
             result = data.get(search, {})
         else:
             result = next((item for item in data if item.get('name') == search), {})

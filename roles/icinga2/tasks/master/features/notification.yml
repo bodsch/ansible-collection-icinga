@@ -60,7 +60,7 @@
     - reload icinga2
 
 - name: enable notification feature
-  icinga2_features:
+  bodsch.icinga.icinga2_features:
     features:
       - notification
     state: "{{ feature_notification_state }}"

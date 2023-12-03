@@ -1,10 +1,5 @@
 ---
 
-#- name: get icinga2 facts
-#  ansible.builtin.include_tasks: facts.yml
-#  tags:
-#    - icinga2_configure
-
 - name: create icinga2 constants.conf
   ansible.builtin.template:
     src: etc/icinga2/constants.conf.j2
@@ -136,7 +131,7 @@
     - icinga2_primary_master == ansible_fqdn
   block:
     - name: validate icinga2 configuration
-      icinga2_daemon:
+      bodsch.icinga.icinga2_daemon:
         parameters:
           - --validate
           - --log-level debug
@@ -151,16 +146,16 @@
         - icinga2_validate_config.failed is defined
         - not icinga2_validate_config
 
-    - name: flush handlers
-      ansible.builtin.meta: flush_handlers
+    # this runs on both primary instance primay1 AND primary2!
+    # but we need this onloy on the first primary
+    #- name: flush handlers
+    #  ansible.builtin.meta: flush_handlers
 
-    # TODO
-    # check if *restart* realy needed!
-    # - name: reload icinga2 master config
-    #   ansible.builtin.service:
-    #     name: icinga2
-    #     state: restarted
-    #   register: _restart_icinga2_master
+    # reload configuration on primary (or first primary)
+    - name: reload icinga2 configuration on primary master '{{ icinga2_primary_master }}'
+      ansible.builtin.service:
+        name: icinga2
+        state: reloaded
 
     - name: get state from primary master
       tags:
@@ -196,7 +191,6 @@
           until: icinga2_api_test is succeeded
           retries: 5
           delay: 2
-
 
 - name: master secondary
   ansible.builtin.include_tasks: master/secondary.yml

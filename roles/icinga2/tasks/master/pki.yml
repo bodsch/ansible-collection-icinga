@@ -15,7 +15,7 @@
         - icinga2
 
     - name: create icinga2 CA
-      icinga2_ca:
+      bodsch.icinga.icinga2_ca:
         hostname: "{{ inventory_hostname }}"
         common_name: "{{ icinga2_certificate_cn }}"
         force: false

@@ -3,7 +3,6 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 from ansible.utils.display import Display
-import json
 
 display = Display()
 
@@ -23,9 +22,6 @@ class FilterModule(object):
         display.v(f"database_schema({data}, {database_type})")
 
         result = []
-
-        #_data = data.copy()
-        # display.v(f"{json.dumps(data, indent=2)}")
 
         files = data.get("files")
         path = [x.get("path") for x in files]

@@ -119,7 +119,5 @@ def test_fpm_pools(host, get_vars):
     f = host.file(socket_name)
     assert f.exists
 
-    listen = []
-
     if not (distribution == 'ubuntu' and release == '18.04'):
         assert host.socket("unix://{}".format(socket_name)).is_listening

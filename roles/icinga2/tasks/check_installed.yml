@@ -6,7 +6,7 @@
   register: icinga2_binary_file
 
 - name: detect installed icinga2 version
-  icinga2_version:
+  bodsch.icinga.icinga2_version:
   register: installed_icinga2_version
   when:
     - icinga2_binary_file.stat.exists

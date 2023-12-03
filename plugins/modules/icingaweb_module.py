@@ -137,9 +137,9 @@ class IcingaWeb2Modules(object):
         return res
 
     def create_link(self, source, destination, force=False):
-        module.log(msg="create_link({}, {}, {})".format(source, destination, force))
+        self.module.log(msg=f"create_link({source}, {destination}, {force})")
 
-        if(force):
+        if (force):
             os.remove(destination)
             os.symlink(source, destination)
         else:

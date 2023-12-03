@@ -3,7 +3,7 @@
 - name: validate icinga2 configuration
   tags:
     - icinga2_service
-  icinga2_daemon:
+  bodsch.icinga.icinga2_daemon:
     parameters:
       - --validate
       - --log-level debug

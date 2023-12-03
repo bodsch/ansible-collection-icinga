@@ -1,7 +1,7 @@
 ---
 
 - name: disable icinga2 features
-  icinga2_features:
+  bodsch.icinga.icinga2_features:
     features: "{{ icinga2_master_features_disabled }}"
     state: absent
   notify:

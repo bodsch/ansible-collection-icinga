@@ -4,12 +4,12 @@
   ansible.builtin.include_tasks: check_installed.yml
 
 - name: detect icinga2_user
-  icinga2_prepared_vars:
+  bodsch.icinga.icinga2_prepared_vars:
     variable: ICINGA2_USER
   register: _icinga2_user
 
 - name: detect icinga2_group
-  icinga2_prepared_vars:
+  bodsch.icinga.icinga2_prepared_vars:
     variable: ICINGA2_GROUP
   register: _icinga2_group
 

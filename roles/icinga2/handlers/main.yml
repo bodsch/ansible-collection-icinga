@@ -6,7 +6,7 @@
     warn: false
 
 - name: check configuration
-  icinga2_daemon:
+  bodsch.icinga.icinga2_daemon:
     parameters:
       - --validate
       - --log-level debug
@@ -34,7 +34,7 @@
 
 - name: reload icinga2 master config
   run_once: true
-  icinga2_reload_master:
+  bodsch.icinga.icinga2_reload_master:
     requester: "{{ ansible_fqdn }}"
     wait: 2
     timeout: 4
@@ -42,6 +42,9 @@
   delegate_to: "{{ item.key }}"
   with_dict:
     "{{ icinga2_masters }}"
+  when:
+    - item.value.type is defined
+    - item.value.type == 'primary'
   register: _icinga2_master_reloaded
   notify:
     - reloaded config

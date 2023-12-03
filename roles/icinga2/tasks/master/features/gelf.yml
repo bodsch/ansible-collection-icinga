@@ -13,7 +13,7 @@
     mode: 0660
 
 - name: enable gelf feature
-  icinga2_features:
+  bodsch.icinga.icinga2_features:
     features:
       - gelf
     state: "{{ feature_gelf_state }}"
