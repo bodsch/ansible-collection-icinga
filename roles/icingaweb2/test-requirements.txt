@@ -5,7 +5,6 @@ flake8
 molecule
 molecule-plugins[docker]
 netaddr
-pytest
 pytest-testinfra
 tox
 tox-gh-actions
