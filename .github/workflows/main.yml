@@ -19,12 +19,21 @@ on:
       - 'feature/**'
       - 'fix/**'
       - '!doc/**'
+    paths:
+      - '!README.md'
+      - '!Makefile'
+      - '!.github/workflows/*'
+
   pull_request:
     branches:
       - 'main'
       - 'feature/**'
       - 'fix/**'
       - '!doc/**'
+    paths:
+      - '!README.md'
+      - '!Makefile'
+      - '!.github/workflows/*'
 
 env:
   COLLECTION_NAMESPACE: bodsch
