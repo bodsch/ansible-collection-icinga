@@ -7,13 +7,18 @@ driver:
 
 platforms:
   - name: database
-    image: "bodsch/ansible-debian:11"
+    image: "bodsch/ansible-debian:12"
     command: ${MOLECULE_DOCKER_COMMAND:-""}
     docker_host: "${DOCKER_HOST:-unix://run/docker.sock}"
     privileged: true
     pre_build_image: true
+    cgroupns_mode: host
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      - /var/lib/containerd
+    tmpfs:
+      - /run
+      - /tmp
     groups:
       - database
     docker_networks:
@@ -26,7 +31,7 @@ platforms:
         ipv4_address: "10.11.0.1"
 
   # - name: icinga2
-  #   image: "bodsch/ansible-debian:11"
+  #   image: "bodsch/ansible-debian:12"
   #   command: ${MOLECULE_DOCKER_COMMAND:-""}
   #   docker_host: "${DOCKER_HOST:-unix://run/docker.sock}"
   #   privileged: true
@@ -40,13 +45,18 @@ platforms:
   #       ipv4_address: "10.11.0.2"
 
   - name: instance
-    image: "bodsch/ansible-${DISTRIBUTION:-debian:11}"
+    image: "bodsch/ansible-${DISTRIBUTION:-debian:12}"
     command: ${MOLECULE_DOCKER_COMMAND:-""}
     docker_host: "${DOCKER_HOST:-unix://run/docker.sock}"
     privileged: true
     pre_build_image: true
+    cgroupns_mode: host
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      - /var/lib/containerd
+    tmpfs:
+      - /run
+      - /tmp
     published_ports:
       - 80:80
     networks:

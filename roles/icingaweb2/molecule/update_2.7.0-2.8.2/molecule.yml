@@ -7,7 +7,7 @@ driver:
 
 platforms:
   - name: database
-    image: "bodsch/ansible-debian:11"
+    image: "bodsch/ansible-debian:12"
     command: ${MOLECULE_DOCKER_COMMAND:-""}
     docker_host: "${DOCKER_HOST:-unix://run/docker.sock}"
     privileged: true
@@ -31,7 +31,7 @@ platforms:
         ipv4_address: "10.11.0.1"
 
   # - name: icinga2
-  #   image: "bodsch/ansible-debian:11"
+  #   image: "bodsch/ansible-debian:12"
   #   command: ${MOLECULE_DOCKER_COMMAND:-""}
   #   docker_host: "${DOCKER_HOST:-unix://run/docker.sock}"
   #   privileged: true
