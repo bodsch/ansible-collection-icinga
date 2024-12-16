@@ -3,7 +3,7 @@
 namespace: bodsch
 name: icinga
 
-version: 1.1.0
+version: 1.1.1
 
 readme: README.md
 
