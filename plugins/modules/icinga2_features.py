@@ -14,37 +14,39 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: icinga2_features
+author: "Bodo Schulz <bodo@boone-schulz.de> (@schulzbo)"
+version_added: "0.1.0"
 
 short_description: Manage multiple Icinga2 features at once
 description:
     - This module can be used to enable or disable more than on Icinga2 feature.
-author: "Bodo Schulz <bodo@boone-schulz.de> (@schulzbo)"
+
 options:
-    features:
-      type: list
-      description:
-      - This list conatins the feature names to enable or disable.
-      required: True
-    state:
-      type: str
-      description:
-      - If set to C(present) and feature is disabled, then feature is enabled.
-      - If set to C(present) and feature is already enabled, then nothing is changed.
-      - If set to C(absent) and feature is enabled, then feature is disabled.
-      - If set to C(absent) and feature is already disabled, then nothing is changed.
-      choices: [ "present", "absent" ]
-      default: present
+  features:
+    description:
+    - This list conatins the feature names to enable or disable.
+    required: True
+    type: list
+  state:
+    description:
+    - If set to C(present) and feature is disabled, then feature is enabled.
+    - If set to C(present) and feature is already enabled, then nothing is changed.
+    - If set to C(absent) and feature is enabled, then feature is disabled.
+    - If set to C(absent) and feature is already disabled, then nothing is changed.
+    choices: [ "present", "absent" ]
+    default: present
+    type: str
 '''
 
 EXAMPLES = '''
 - name: Enable ido-pgsql feature
-  icinga2_features:
+  bodsch.icinga.icinga2_features:
     feature:
       - ido-pgsql
     state: present
 
 - name: Disable more features
-  icinga2_features:
+  bodsch.icinga.icinga2_features:
     feature:
       - perfdata
       - notification
@@ -52,15 +54,16 @@ EXAMPLES = '''
     state: absent
 
 - name: Disable api feature
-  icinga2_features:
+  bodsch.icinga.icinga2_features:
     feature:
       - api
     state: absent
 '''
 
 RETURN = '''
-#
 '''
+
+# ----------------------------------------------------------------------
 
 
 class Icinga2Features:

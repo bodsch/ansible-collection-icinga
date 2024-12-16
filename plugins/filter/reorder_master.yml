@@ -1,0 +1,23 @@
+
+DOCUMENTATION:
+  name: reorder_master
+  author: Bodo Schulz (@bodsch)
+  version_added: 1.0.0
+  short_description: Reorganises the dictation ‘icinga2_masters’
+  description:
+    - Reorganises the dictation ‘icinga2_masters’ if an overwrite entry is present.
+  positional: _input
+  options:
+    _input:
+      description: A directories of icinga masters.
+      type: dict
+      required: true
+  notes:
+
+EXAMPLES: |
+  icinga2_reordered_masters = icinga2_masters | bodsch.icinga.reorder_master
+
+RETURN:
+  _value:
+    description: A dict with the defined icinga masters.
+    type: dict

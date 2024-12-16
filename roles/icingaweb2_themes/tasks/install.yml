@@ -97,7 +97,7 @@
 
 - name: enable / disable themes  # noqa args[module]
   become: true
-  icingacli:
+  bodsch.icinga.icingacli:
     state: "{{ 'enable' if item.enabled | default('true') else 'disable' }}"
     command: module
     module_name: "{{ item.key }}"

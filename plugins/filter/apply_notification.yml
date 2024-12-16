@@ -1,0 +1,27 @@
+
+DOCUMENTATION:
+  name: apply_notification
+  author: Bodo Schulz (@bodsch)
+  version_added: 1.0.0
+  short_description: TBD
+  description:
+    - TBD
+  positional: _input
+  options:
+    _input:
+      description: A directories of ...
+      type: dict
+      required: true
+    name:
+      description: TBD.
+      type: string
+      required: true
+  notes:
+
+EXAMPLES: |
+  data, _type, valid_data = icinga2_notification_apply_rules | bodsch.icinga.apply_notification(n)
+
+RETURN:
+  _value:
+    description: TBD
+    type: tuple

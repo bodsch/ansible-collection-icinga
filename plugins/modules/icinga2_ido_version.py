@@ -26,20 +26,60 @@ from ansible.module_utils.mysql import mysql_driver, mysql_driver_fail_msg
 
 DOCUMENTATION = """
 ---
-module: icinga2_ido_version.py
-author:
-    - 'Bodo Schulz'
+module: icinga2_ido_version
+author: "Bodo Schulz <bodo@boone-schulz.de> (@schulzbo)"
+version_added: "0.1.0"
+
 short_description: returns the ido version from database.
 description: ''
+
+
+options:
+  dba_user:
+    description: TBD
+    required: true
+    type: str
+
+  dba_password:
+    description: TBD
+    required: true
+    type: str
+    no_log: true
+
+  dba_host:
+    description: TBD
+    required: true
+    type: str
+
+  dba_port:
+    description: TBD
+    required: true
+    type: int
+    default: 3306
+
+  dba_database:
+    description: TBD
+    required: true
+    type: str
+
+  database_config_file:
+    description: TBD
+    required: false
+    type: str
 """
 
 EXAMPLES = """
-- name: ensure, table_schema is present
-  icinga2_ido_version:
-    dba_host: ::1
-    dba_user: root
-    dba_password: password
+- name: detect mysql ido version
+  bodsch.icinga.icinga2_ido_version:
+    dba_host: "{{ icinga2_ido.host }}"
+    dba_user: "{{ icinga2_ido.user }}"
+    dba_password: "{{ icinga2_ido.password }}"
+    dba_database: "{{ icinga2_ido.database }}"
+  register: _mysql_ido_version
 """
+
+RETURN = '''
+'''
 
 # ---------------------------------------------------------------------------------------
 

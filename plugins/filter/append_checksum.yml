@@ -1,0 +1,29 @@
+
+DOCUMENTATION:
+  name: append_checksum
+  author: Bodo Schulz (@bodsch)
+  version_added: 1.0.0
+  short_description: create a list from list
+  description:
+    - create a list from list.
+  positional: _input
+  options:
+    _input:
+      description: a dictionary with some icingaweb modules or themes.
+      type: dict
+      required: true
+    checksums:
+      description: A dictionary mit checksums.
+      type: dict
+      required: true
+  notes:
+
+EXAMPLES: |
+  icingaweb_modules: "{{ icingaweb_modules | bodsch.icinga.append_checksum(_module_checksum) }}"
+
+  icingaweb_themes: "{{ icingaweb_themes | bodsch.icinga.append_checksum(_theme_checksum) }}"
+
+RETURN:
+  _value:
+    description: The original dictionary, in which each entry was extended with a checksum for the corresponding archive.
+    type: dict

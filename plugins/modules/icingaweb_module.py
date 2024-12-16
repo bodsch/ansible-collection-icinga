@@ -21,7 +21,7 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = """
 ---
-module: icingawweb_module.py
+module: icingaweb_module
 author:
     - 'Bodo Schulz'
 short_description: enable / disable icingaweb modules.
@@ -31,10 +31,19 @@ description: ''
 EXAMPLES = """
 - name: disable modules
   become: true
-  icingaweb_module:
+  bodsch.icinga.icingaweb_module:
     state: absent
     modules: dark_lord
+
+- name: detect changed modules
+  bodsch.icinga.icingaweb_module:
+    state: verify
+    install_directory: "{{ icingaweb_modules_install_dir }}/modules"
+    modules: "{{ icingaweb_modules }}"
+    checksums: "{{ local_icingaweb_modules | default({}) }}"
 """
+
+# ---------------------------------------------------------------------------------------
 
 
 class IcingaWeb2Modules(object):

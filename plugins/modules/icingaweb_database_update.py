@@ -24,7 +24,7 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = """
 ---
-module: icingaweb_database_update.py
+module: icingaweb_database_update
 author:
     - 'Bodo Schulz'
 short_description: handle database updates for icingaweb.
@@ -42,6 +42,8 @@ EXAMPLES = """
     icingaweb_upgrade_directory: "{{ icingaweb_upgrade_directory }}"
   register: _icingaweb_database_update
 """
+
+# ---------------------------------------------------------------------------------------
 
 
 class IcingaWeb2DatabaseUpdate(object):

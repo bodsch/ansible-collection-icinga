@@ -19,7 +19,7 @@ from ansible.module_utils.mysql import (
 
 DOCUMENTATION = """
 ---
-module: mysql_schema.py
+module: mysql_schema
 author:
     - 'Bodo Schulz'
 short_description: check it the named schema exists in a mysql.

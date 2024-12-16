@@ -9,6 +9,40 @@ from __future__ import absolute_import, division, print_function
 
 from ansible.module_utils.basic import AnsibleModule
 
+DOCUMENTATION = r"""
+---
+module: icinga2_constants
+author: Bodo 'bodsch' Schulz <bodo@boone-schulz.de>
+version_added: 1.0.0
+
+short_description: TBD.
+description:
+    - TBD.
+
+options:
+  parameters:
+    description: TBD
+    required: true
+    type: list
+"""
+
+EXAMPLES = r"""
+- name: check configuration
+  bodsch.icinga.icinga2_daemon:
+    parameters:
+      - --validate
+      - --log-level debug
+      - --config /etc/icinga2/icinga2.conf
+  register: icinga2_validate_config
+  notify:
+    - validated config
+"""
+
+RETURN = r"""
+"""
+
+# ----------------------------------------------------------------------
+
 
 class Icinga2Daemon(object):
     """

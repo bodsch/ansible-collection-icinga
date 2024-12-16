@@ -1,14 +1,14 @@
 # python 3 headers, required if submitting to Ansible
+
 from __future__ import (absolute_import, division, print_function)
-__metaclass__ = type
 
 from ansible.utils.display import Display
 
 import json
 import crypt
 
-# https://docs.ansible.com/ansible/latest/dev_guide/developing_plugins.html
-# https://blog.oddbit.com/post/2019-04-25-writing-ansible-filter-plugins/
+__metaclass__ = type
+
 
 display = Display()
 
@@ -21,7 +21,7 @@ class FilterModule(object):
     def filters(self):
         return {
             # 'type': self.var_type,
-            'create_password_hash': self.password_hash,
+            # 'create_password_hash': self.password_hash,
             'dict_from_list': self.dict_from_list,
             'module_version': self.module_version,
         }

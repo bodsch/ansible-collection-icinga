@@ -1,0 +1,25 @@
+
+DOCUMENTATION:
+  name: installed_themes
+  author: Bodo Schulz (@bodsch)
+  version_added: 1.0.0
+  short_description: Creates a dictionary of the installed themes.
+  description:
+    - Creates a dictionary of the installed themes.
+  positional: _input
+  options:
+    _input:
+      description: The dictionary with information on Icingaweb themes.
+      type: dict
+      required: true
+  notes:
+
+EXAMPLES: |
+  modules: "{{ icingaweb_themes | bodsch.icinga.installed_themes }}"
+
+RETURN:
+  _value:
+    description:
+      - Creates a dictionary of the installed themes.
+      - The dictionary is persisted as Facts.
+    type: dict

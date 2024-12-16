@@ -21,7 +21,7 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = """
 ---
-module: icingaweb_module.py
+module: icingaweb_themes
 author:
     - 'Bodo Schulz'
 short_description: enable / disable icingaweb modules.
@@ -31,10 +31,12 @@ description: ''
 EXAMPLES = """
 - name: disable modules
   become: true
-  icingaweb_module:
+  icingaweb_themes:
     state: absent
     module: dark_lord
 """
+
+# ---------------------------------------------------------------------------------------
 
 
 class IcingaWeb2Themes(object):

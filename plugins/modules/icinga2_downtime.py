@@ -19,82 +19,75 @@ from requests import Session
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {
-    'metadata_version': '0.1',
-    'status': ['preview'],
-    'supported_by': 'community'
-}
-
-DOCUMENTATION = r'''
+DOCUMENTATION = """
 ---
 module: icinga2_downtime
+author: Bodo Schulz (@bodsch)
+version_added: 0.1.0
 
 short_description: A module to deploy downtimes using the Icinga 2 API
+description:
+  - The module to schedule and remove downtimes at hosts and their services.
 
-description: The module to schedule and remove downtimes at hosts and their services.
-
-version_added: "0.1.0"
-author: "Bodo Schulz (bodo@boone-schulz.de)"
 options:
     hostname:
       description: The name of the host this comment belongs to.
       required: true
-      type: string
+      type: str
 
     state:
       description: Choose between present and absent.
       required: false
-      type: string
+      type: str
       default: present
 
     start_time:
       description: Timestamp marking the beginning of the downtime.
       required: true
-      type: string
+      type: str
 
     end_time:
       description: Timestamp marking the end of the downtime.
       required: true
-      type: string
+      type: str
 
-    duration
-      description: |
-        Required for flexible downtimes.
-        Duration of the downtime in seconds if fixed is set to false.
+    duration:
+      description:
+        - Required for flexible downtimes.
+        - Duration of the downtime in seconds if fixed is set to false.
       required: true
       type: int
 
-    all_services
-      description: |
-        Sets downtime for all services for the matched host objects.
-        If child_options are set, all child hosts and their services will schedule a downtime too.
+    all_services:
+      description:
+        - Sets downtime for all services for the matched host objects.
+        - If child_options are set, all child hosts and their services will schedule a downtime too.
       default: false
       type: bool
       default: false
 
-    author
+    author:
       description: Name of the author.
       required: false
-      type: string
+      type: str
       default: ansible
 
-    comment
+    comment:
       description: A comment to show in the Icinga Web 2 interface.
       required: false
-      type: string
+      type: str
       default: generated downtime
 
-    fixed
+    fixed:
       description: If true, the downtime is fixed otherwise flexible.
       default: false
       type: bool
       default: false
+"""
 
-'''
-
-EXAMPLES = r"""
+EXAMPLES = r'''
 - name: set downtime
-  icinga2_downtime:
+  bodsch.icinga.icinga2_downtime:
     host: "https://localhost"
     username: "ansible"
     password: "a_secret"
@@ -110,7 +103,7 @@ EXAMPLES = r"""
     downtime_end: "{{ downtime_start | int + icinga2_downtime_duration * 60 }}"
 
 - name: schedule downtime
-  icinga2_downtime:
+  bodsch.icinga.icinga2_downtime:
     host: "https://localhost"
     username: "ansible"
     password: "a_secret"
@@ -127,7 +120,7 @@ EXAMPLES = r"""
     icinga2_downtime_duration: 10
     downtime_start: "{{ ansible_date_time.epoch }}"
     downtime_end: "{{ downtime_start | int + icinga2_downtime_duration * 60 }}"
-"""
+'''
 
 RETURN = r"""
 name:
@@ -139,6 +132,8 @@ data:
     type: dict
     returned: always
 """
+
+# ---------------------------------------------------------------------------------------
 
 
 class Icinga2Api(object):

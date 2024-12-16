@@ -13,11 +13,55 @@ from ansible.module_utils.basic import AnsibleModule
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {
-    'metadata_version': '0.1',
-    'status': ['preview'],
-    'supported_by': 'community'
-}
+DOCUMENTATION = """
+---
+module: icingacli
+author: Bodo Schulz (@bodsch)
+version_added: 1.0.0
+
+short_description: TBD
+description: ''
+
+options:
+  command:
+    description:
+      - c(module)
+      - c(version)
+      - c(web)
+    choices:
+      - module
+      - version
+      - web
+    default: module
+
+  state:
+    description:
+    - If set to C(present) and feature is disabled, then feature is enabled.
+    - If set to C(present) and feature is already enabled, then nothing is changed.
+    - If set to C(absent) and feature is enabled, then feature is disabled.
+    - If set to C(absent) and feature is already disabled, then nothing is changed.
+    choices: ["enable", "disable", "install", "list", "permissions",
+                "purge", "remove", "restrictions", "search"]
+    default: enable
+
+  module_name:
+    description: TBD
+    required: true
+    type: str
+"""
+
+EXAMPLES = """
+- name: detect installed icinga2 version
+  bodsch.icinga.icinga2_version:
+  register: installed_icinga2_version
+  when:
+    - icinga2_binary_file.stat.exists
+"""
+
+RETURN = r"""
+"""
+
+# ---------------------------------------------------------------------------------------
 
 
 class IcingaCLI(object):

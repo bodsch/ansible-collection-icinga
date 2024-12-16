@@ -10,6 +10,7 @@ display = Display()
 class FilterModule(object):
     """
     """
+
     def filters(self):
         return {
             'installed_modules': self.installed_modules,

@@ -10,6 +10,7 @@ display = Display()
 class FilterModule(object):
     """
     """
+
     def filters(self):
         return {
             'database_schema': self.database_schema,

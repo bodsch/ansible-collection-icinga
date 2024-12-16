@@ -11,6 +11,30 @@ import re
 from ansible.module_utils.basic import AnsibleModule
 
 
+DOCUMENTATION = """
+---
+module: icingadb_version
+author: Bodo Schulz (@bodsch)
+version_added: 1.0.0
+
+short_description: Returns the version of the installed IcingaDB.
+description: Returns the version of the installed IcingaDB.
+
+options: ''
+"""
+
+EXAMPLES = """
+- name: define icingadb version
+  bodsch.icinga.icingadb_version:
+  register: icingadb_version
+"""
+
+RETURN = r"""
+"""
+
+# ---------------------------------------------------------------------------------------
+
+
 class IcingaDbVersion(object):
     """
       Main Class

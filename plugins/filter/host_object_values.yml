@@ -1,0 +1,38 @@
+
+DOCUMENTATION:
+  name: host_object_values
+  author: Bodo Schulz (@bodsch)
+  version_added: 1.0.0
+  short_description: TBD
+  description:
+    - TBD
+  positional: _input
+  options:
+    _input:
+      description: A directories of ...
+      type: dict
+      required: true
+    primary:
+      description: TBD.
+      type: bool
+      required: true
+    key:
+      description: TBD.
+      type: string
+      required: true
+    ansible_fqdn:
+      description: TBD.
+      type: string
+      required: true
+  notes:
+
+EXAMPLES: |
+  values, endpoint, endpoint_name, zone_name, display_name, check_command, _ = values | bodsch.icinga.host_object_values(True, key, None)
+
+  values, _, object_name, zone_name, display_name, check_command, address = values | bodsch.icinga.host_object_values(False, key, ansible_fqdn)
+
+
+RETURN:
+  _value:
+    description: TBD
+    type: tuple

@@ -15,6 +15,89 @@ from ansible.module_utils.basic import AnsibleModule
 # from requests import Session
 
 
+DOCUMENTATION = """
+---
+module: icinga2_ido_version
+author: "Bodo Schulz <bodo@boone-schulz.de> (@schulzbo)"
+version_added: "0.1.0"
+
+short_description: returns the ido version from database.
+description: ''
+
+
+options:
+  state:
+    description:
+      - (C(present))
+      - (C(absent))
+    required: true
+    default: present
+
+  common_name:
+    description: TBD
+    required: true
+    type: str
+
+  ca_key:
+    description: TBD
+    required: true
+    type: str
+
+  ticket:
+    description: TBD
+    required: true
+    type: int
+    default: 3306
+
+  parent_icinga2_host:
+    description: TBD
+    required: true
+    type: str
+
+  parent_icinga2_port:
+    description: TBD
+    required: false
+    type: int
+    default: 5665
+
+  zone:
+    description: TBD
+    required: true
+    type: str
+
+  endpoint:
+    description: TBD
+    required: true
+    type: str
+
+  force:
+    description: TBD
+    required: false
+    type: bool
+    default: false
+"""
+
+EXAMPLES = """
+- name: configure icinga2 secondary master pki
+  become: true
+  bodsch.icinga.icinga2_node_setup:
+    common_name: "{{ icinga2_certificate_cn }}"
+    ca_key: "{{ icinga2_pki_ca_key }}"
+    ticket: "{{ icinga2_fqdn_ticket }}"
+    parent_icinga2_host: "{{ icinga2_primary_master }}"
+    zone: "{{ icinga2_primary_master }}"
+    endpoint: "{{ icinga2_primary_master }}"
+  when:
+    - not __fqdn_key.stat.exists
+    - icinga2_fqdn_ticket is defined
+"""
+
+RETURN = '''
+'''
+
+# ---------------------------------------------------------------------------------------
+
+
 class Icinga2NodeSetupHelper(object):
     """
       Main Class

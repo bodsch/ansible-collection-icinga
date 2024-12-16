@@ -1,0 +1,27 @@
+
+DOCUMENTATION:
+  name: dict_from_list
+  author: Bodo Schulz (@bodsch)
+  version_added: 1.0.0
+  short_description: create a dictionary from list
+  description:
+    - create a dictionary from list.
+  positional: _input
+  options:
+    _input:
+      description: A list of elements.
+      type: list
+      required: true
+    search:
+      description: An string to search entries in (c(_input)) list.
+      type: string
+      required: true
+  notes:
+
+EXAMPLES: |
+  _icingaweb_module_grafana: "{{ icingaweb_modules | bodsch.icinga.dict_from_list('grafana') }}"
+
+RETURN:
+  _value:
+    description: The element you are looking for as a dictionary.
+    type: dict

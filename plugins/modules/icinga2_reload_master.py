@@ -16,6 +16,57 @@ import errno
 import signal
 
 
+DOCUMENTATION = """
+---
+module: icinga2_reload_master
+author: Bodo Schulz (@bodsch)
+version_added: 1.0.0
+
+short_description: TBD
+description: ''
+
+options:
+  requester:
+    description: TBD
+    required: true
+    type: str
+
+  wait:
+    description: TBD
+    required: false
+    type: int
+    default: 2
+
+  timeout:
+    description: TBD
+    required: false
+    type: int
+    default: 2
+"""
+
+EXAMPLES = """
+- name: reload icinga2 master config
+  run_once: true
+  bodsch.icinga.icinga2_reload_master:
+    requester: "{{ ansible_fqdn }}"
+    wait: 2
+    timeout: 4
+  ignore_errors: false
+  delegate_to: "{{ item.key }}"
+  with_dict:
+    "{{ icinga2_masters }}"
+  when:
+    - item.value.type is defined
+    - item.value.type == 'primary'
+  register: _icinga2_master_reloaded
+"""
+
+RETURN = r"""
+"""
+
+# ---------------------------------------------------------------------------------------
+
+
 class SimpleFlock:
     """
       Provides the simplest possible interface to flock-based file locking.

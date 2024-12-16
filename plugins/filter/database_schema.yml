@@ -1,0 +1,27 @@
+
+DOCUMENTATION:
+  name: database_schema
+  author: Bodo Schulz (@bodsch)
+  version_added: 1.0.0
+  short_description: Defines a database schema file to be imported.
+  description:
+    - Defines a database schema file to be imported.
+  positional: _input
+  options:
+    _input:
+      description: A dictionary with found files.
+      type: dict
+      required: true
+    database_type:
+      description: A string with database types to be searched for in the dictionary. The default is ‘mysql’
+      type: string
+      required: false
+  notes:
+
+EXAMPLES: |
+  icingadb_database_schema: "{{ found_schema | bodsch.icinga.database_schema('mysql') | first }}"
+
+RETURN:
+  _value:
+    description: A list of the files found.
+    type: list

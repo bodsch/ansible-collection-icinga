@@ -9,6 +9,48 @@ from __future__ import absolute_import, division, print_function
 
 from ansible.module_utils.basic import AnsibleModule
 
+DOCUMENTATION = """
+---
+module: icinga2_ticket
+author: Bodo Schulz (@bodsch)
+version_added: 1.0.0
+
+short_description: TBD
+description: ''
+
+options:
+  common_name:
+    description: TBD
+    required: true
+    type: str
+
+  salt:
+    description: TBD
+    required: true
+    type: str
+"""
+
+EXAMPLES = """
+- name: "create a ticket from icinga2 master for the secondary master '{{ ansible_fqdn }}'"
+  delegate_to: "{{ icinga2_primary_master }}"
+  bodsch.icinga.icinga2_ticket:
+    common_name: "{{ icinga2_certificate_cn }}"
+    salt: "{{ icinga2_salt }}"
+  register: ticket
+
+- name: "create a pki ticket at '{{ icinga2_primary_master }}'"
+  bodsch.icinga.icinga2_ticket:
+    common_name: "{{ icinga2_certificate_cn }}"
+    salt: "{{ icinga2_salt }}"
+  register: ticket
+  delegate_to: "{{ icinga2_primary_master }}"
+"""
+
+RETURN = r"""
+"""
+
+# ---------------------------------------------------------------------------------------
+
 
 class Icinga2TicketHelper(object):
     """

@@ -19,17 +19,12 @@ from ansible.module_utils.mysql import (
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {
-    'metadata_version': '0.1',
-    'status': ['preview'],
-    'supported_by': 'community'
-}
-
 DOCUMENTATION = """
 ---
-module: icingawweb_database_groups.py
-author:
-    - 'Bodo Schulz'
+module: icingaweb_database_group
+author: Bodo Schulz (@bodsch)
+version_added: 1.0.0
+
 short_description: handle groups in mysql.
 description: ''
 """
@@ -48,6 +43,11 @@ EXAMPLES = """
     database_name: icingaweb_config
     database_config_file: /etc/icingaweb2/.my.cnf
 """
+
+RETURN = r"""
+"""
+
+# ----------------------------------------------------------------------
 
 
 class IcingaWeb2DatabaseGroup(object):

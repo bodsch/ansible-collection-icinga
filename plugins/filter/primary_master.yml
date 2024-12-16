@@ -1,0 +1,23 @@
+
+DOCUMENTATION:
+  name: primary_master
+  author: Bodo Schulz (@bodsch)
+  version_added: 1.0.0
+  short_description: Defines a primary icinga master from a directories of icinga masters.
+  description:
+    - Defines a primary icinga master from a directories of icinga masters.
+  positional: _input
+  options:
+    _input:
+      description: A directories of icinga masters.
+      type: dict
+      required: true
+  notes:
+
+EXAMPLES: |
+  icinga2_primary_master: "{{ icinga2_masters | bodsch.icinga.primary_master }}"
+
+RETURN:
+  _value:
+    description: A string with the defined icinga master.
+    type: string

@@ -10,6 +10,31 @@ import re
 
 from ansible.module_utils.basic import AnsibleModule
 
+DOCUMENTATION = """
+---
+module: icinga2_version
+author: Bodo Schulz (@bodsch)
+version_added: 1.0.0
+
+short_description: TBD
+description: ''
+
+options:
+"""
+
+EXAMPLES = """
+- name: detect installed icinga2 version
+  bodsch.icinga.icinga2_version:
+  register: installed_icinga2_version
+  when:
+    - icinga2_binary_file.stat.exists
+"""
+
+RETURN = r"""
+"""
+
+# ---------------------------------------------------------------------------------------
+
 
 class Icinga2Version(object):
     """

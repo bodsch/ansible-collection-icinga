@@ -19,11 +19,12 @@ __metaclass__ = type
 
 DOCUMENTATION = """
 ---
-module: icingadb_database_update.py
-author:
-    - 'Bodo Schulz'
+module: icingadb_database_update
+author: 'Bodo Schulz'
+
 short_description: handle database updates for icingawdb.
 description: ''
+
 """
 
 EXAMPLES = """
@@ -39,12 +40,17 @@ EXAMPLES = """
   register: _icingadb_database_update
 """
 
+RETURN = r"""
+"""
+
 # TODO
 #  progamm_version vs. Database_version
 #  1.0.0 = 3
 #  1.1.0 = 4
 #  1.1.1 = 5
 
+
+# ---------------------------------------------------------------------------------------
 
 class IcingaDbDatabaseUpdate(object):
     """

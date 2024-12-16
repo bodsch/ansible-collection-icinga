@@ -1,0 +1,27 @@
+
+DOCUMENTATION:
+  name: apply_service_name
+  author: Bodo Schulz (@bodsch)
+  version_added: 1.0.0
+  short_description: TBD
+  description:
+    - TBD
+  positional: _input
+  options:
+    _input:
+      description: A directories of ...
+      type: dict
+      required: true
+    default:
+      description: TBD.
+      type: string
+      required: true
+  notes:
+
+EXAMPLES: |
+  v, _name = v | bodsch.icinga.apply_service_name(c)
+
+RETURN:
+  _value:
+    description: TBD
+    type: tuple

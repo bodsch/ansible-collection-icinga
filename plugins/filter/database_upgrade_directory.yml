@@ -1,0 +1,27 @@
+
+DOCUMENTATION:
+  name: database_upgrade_directory
+  author: Bodo Schulz (@bodsch)
+  version_added: 1.0.0
+  short_description: Defines a directory from which update files are to be obtained.
+  description:
+    - Defines a directory from which update files are to be obtained.
+  positional: _input
+  options:
+    _input:
+      description: A dictionary with found directories.
+      type: dict
+      required: true
+    database_type:
+      description: A string with database types to be searched for in the dictionary. The default is ‘mysql’
+      type: string
+      required: false
+  notes:
+
+EXAMPLES: |
+  icingadb_upgrade_directory: "{{ found_directory | bodsch.icinga.database_upgrade_directory('mysql')}}"
+
+RETURN:
+  _value:
+    description: A string with the found directories.
+    type: string

@@ -12,6 +12,46 @@ import re
 from ansible.module_utils.basic import AnsibleModule
 
 
+DOCUMENTATION = """
+---
+module: icinga2_prepared_vars
+author: Bodo Schulz (@bodsch)
+version_added: 1.0.0
+
+short_description: TBD
+description: ''
+
+options:
+  default_file:
+    description: TBD
+    required: false
+    type: str
+    default: /usr/lib/icinga2/prepare-dirs
+
+  variable:
+    description: TBD
+    required: true
+    type: str
+"""
+
+EXAMPLES = """
+- name: detect icinga2_user
+  bodsch.icinga.icinga2_prepared_vars:
+    variable: ICINGA2_USER
+  register: _icinga2_user
+
+- name: detect icinga2_group
+  bodsch.icinga.icinga2_prepared_vars:
+    variable: ICINGA2_GROUP
+  register: _icinga2_group
+"""
+
+RETURN = r"""
+"""
+
+# ---------------------------------------------------------------------------------------
+
+
 class Icinga2PreparedVars(object):
     """
     Main Class to implement the Icinga2 API Client

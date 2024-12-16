@@ -10,6 +10,63 @@ import os
 
 from ansible.module_utils.basic import AnsibleModule
 
+DOCUMENTATION = r"""
+---
+module: icinga2_ca
+author: Bodo 'bodsch' Schulz <bodo@boone-schulz.de>
+version_added: 1.0.0
+
+short_description: Creates a CA for the Icinga2 master.
+description:
+    - Creates a CA for the Icinga2 master.
+
+options:
+  state:
+    description:
+      - (C(present))
+      - (C(absent))
+    required: true
+    default: present
+
+  hostname:
+    description: TBD
+    required: true
+    type: str
+
+  common_name:
+    description: TBD
+    required: true
+    type: str
+
+  key_file:
+    description: TBD
+    required: false
+    type: str
+
+  csr_file:
+    description: TBD
+    required: false
+    type: str
+
+  cert_file:
+    description: TBD
+    required: false
+    type: str
+
+  force:
+    description: TBD
+    required: false
+    type: bool
+"""
+
+EXAMPLES = r"""
+"""
+
+RETURN = r"""
+"""
+
+# ----------------------------------------------------------------------
+
 
 class Icinga2CaHelper(object):
     """

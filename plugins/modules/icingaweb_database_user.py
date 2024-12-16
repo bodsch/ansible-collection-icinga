@@ -27,7 +27,7 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = """
 ---
-module: icingawweb_database_user.py
+module: icingaweb_database_user
 author:
     - 'Bodo Schulz'
 short_description: handle user and they preferences in a mysql.
@@ -50,6 +50,8 @@ EXAMPLES = """
     database_name: icingaweb_config
     database_config_file: /etc/icingaweb2/.my.cnf
 """
+
+# ---------------------------------------------------------------------------------------
 
 
 class IcingaWeb2DatabaseUser(object):

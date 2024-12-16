@@ -1,0 +1,27 @@
+
+DOCUMENTATION:
+  name: icinga_satellite_zone
+  author: Bodo Schulz (@bodsch)
+  version_added: 1.0.0
+  short_description: Defines a satellite zone if icinga2_satellites is configured.
+  description:
+    - Defines a satellite zone if icinga2_satellites is configured.
+  positional: _input
+  options:
+    _input:
+      description: A directories of icinga satellites.
+      type: dict
+      required: true
+    ansible_fqdn:
+      description: The ansible_fqdn to search for in the dictionary to define the zone.
+      type: string
+      required: true
+  notes:
+
+EXAMPLES: |
+  icinga2_satellite_zone: "{{ icinga2_satellites | bodsch.icinga.icinga_satellite_zone(ansible_fqdn) }}"
+
+RETURN:
+  _value:
+    description: The zone name for the ansible_fqdn.
+    type: string

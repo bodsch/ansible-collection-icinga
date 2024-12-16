@@ -1,0 +1,35 @@
+
+DOCUMENTATION:
+  name: dns_icinga_primary
+  author: Bodo Schulz (@bodsch)
+  version_added: 1.0.0
+  short_description: TBD
+  description:
+    - TBD
+  positional: _input
+  options:
+    _input:
+      description: A directories of ...
+      type: dict
+      required: true
+    object_name:
+      description: TBD.
+      type: bool
+      required: true
+    object_data:
+      description: TBD.
+      type: string
+      required: true
+    alternatives:
+      description: TBD.
+      type: list
+      required: true
+  notes:
+
+EXAMPLES: |
+  address = icinga2_masters | bodsch.icinga.dns_icinga_primary(object_name=key, object_data=values, alternatives=[key, ansible_fqdn])
+
+RETURN:
+  _value:
+    description: TBD
+    type: string
